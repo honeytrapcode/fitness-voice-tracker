@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Fitness Tracker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 12px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        button.stop {
+            background-color: #e74c3c;
+        }
+        button.stop:hover {
+            background-color: #c0392b;
+        }
+        button.save {
+            background-color: #2ecc71;
+        }
+        button.save:hover {
+            background-color: #27ae60;
+        }
+        .status {
+            padding: 15px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .transcript {
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .record-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #e74c3c;
+            display: inline-block;
+            margin-right: 10px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            overflow-x: auto;
+            display: block;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .hidden {
+            display: none;
+        }
+        .instructions {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .form-entry {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Voice Fitness Tracker</h1>
+        
+        <div class="instructions">
+            <h3>How to use:</h3>
+            <p>1. Click "Start Recording" and speak your fitness data.</p>
+            <p>2. Use phrases like "Today I ran 3.5 miles" or "Yesterday I did 50 pushups".</p>
+            <p>3. The transcript will appear below and will be processed to update your tracking data.</p>
+            <p>4. Alternatively, use the form below to manually enter your data.</p>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn">Start Recording</button>
+            <button id="stopBtn" class="stop" disabled>Stop Recording</button>
+            <button id="saveBtn" class="save">Save Data</button>
+            <button id="downloadBtn">Download CSV</button>
+            <button id="uploadBtn">Upload CSV</button>
+            <input type="file" id="fileInput" accept=".csv" class="hidden">
+        </div>
+        
+        <div class="status" id="status">Ready to record</div>
+        
+        <div class="transcript-container">
+            <h3>Speech Transcript:</h3>
+            <div class="transcript" id="transcript"></div>
+        </div>
+        
+        <div class="form-entry">
+            <h3>Manual Entry Form</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="datePicker">Date:</label>
+                    <input type="date" id="datePicker">
+                </div>
+                <div class="form-group">
+                    <label for="wakeTime">Wake Up Time:</label>
+                    <input type="time" id="wakeTime">
+                </div>
+                <div class="form-group">
+                    <label for="milesRun">Miles Run:</label>
+                    <input type="number" id="milesRun" step="0.1" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pressUps">Press Ups:</label>
+                    <input type="number" id="pressUps" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="sitUps">Sit Ups:</label>
+                    <input type="number" id="sitUps" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="backs">Backs:</label>
+                    <input type="number" id="backs" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="headUps">Head Ups:</label>
+                    <input type="number" id="headUps" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="guitarHours">Guitar Hours:</label>
+                    <input type="number" id="guitarHours" step="0.25" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="drinks">Drinks:</label>
+                    <input type="number" id="drinks" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="flossed">Flossed:</label>
+                    <select id="flossed">
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="finasteride">Finasteride:</label>
+                    <select id="finasteride">
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button id="addEntryBtn" class="save">Add Entry</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-display">
+            <h3>Your Fitness Data:</h3>
+            <div style="overflow-x: auto;">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Wake Up Time</th>
+                            <th>Miles Run</th>
+                            <th>Press Ups</th>
+                            <th>Sit Ups</th>
+                            <th>Backs</th>
+                            <th>Head Ups</th>
+                            <th>Guitar Played / Hrs</th>
+                            <th>Drinks</th>
+                            <th>Flossed</th>
+                            <th>Finasteride</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper function to format date as DD/MM/YYYY
+        function formatDate(date) {
+            const d = new Date(date);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Helper function to parse date from DD/MM/YYYY format
+        function parseDate(dateStr) {
+            const [day, month, year] = dateStr.split('/');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Initialize data array from sample data
+        let fitnessData = [
+            {
+                date: '27/12/2024',
+                wakeUpTime: '10:30',
+                milesRun: 2.0,
+                pressUps: 100,
+                sitUps: 100,
+                backs: 50,
+                headUps: 0,
+                guitarHours: 0.00,
+                drinks: 6,
+                flossed: 'No',
+                finasteride: 'Yes'
+            },
+            {
+                date: '28/12/2024',
+                wakeUpTime: '12:00',
+                milesRun: 5.6,
+                pressUps: 100,
+                sitUps: 0,
+                backs: 60,
+                headUps: 50,
+                guitarHours: 2.00,
+                drinks: 1,
+                flossed: 'No',
+                finasteride: 'Yes'
+            },
+            {
+                date: '29/12/2024',
+                wakeUpTime: '11:00',
+                milesRun: 0.5,
+                pressUps: 50,
+                sitUps: 25,
+                backs: 25,
+                headUps: 0,
+                guitarHours: 2.00,
+                drinks: 0,
+                flossed: 'Yes',
+                finasteride: 'Yes'
+            }
+        ];
+
+        // DOM Elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInput = document.getElementById('fileInput');
+        const addEntryBtn = document.getElementById('addEntryBtn');
+        const status = document.getElementById('status');
+        const transcript = document.getElementById('transcript');
+        const tableBody = document.getElementById('tableBody');
+
+        // Speech recognition setup
+        let recognition = null;
+        let isRecording = false;
+
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+            
+            recognition.onstart = () => {
+                status.innerHTML = '<span class="record-indicator"></span> Recording...';
+                isRecording = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            };
+            
+            recognition.onend = () => {
+                status.textContent = 'Recording stopped';
+                isRecording = false;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                processTranscript();
+            };
+            
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const result = event.results[i];
+                    if (result.isFinal) {
+                        finalTranscript += result[0].transcript;
+                    } else {
+                        interimTranscript += result[0].transcript;
+                    }
+                }
+                
+                transcript.innerHTML = finalTranscript + '<i style="color: #888;">' + interimTranscript + '</i>';
+            };
+            
+            recognition.onerror = (event) => {
+                status.textContent = 'Error: ' + event.error;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            };
+        } else {
+            status.textContent = 'Speech recognition not supported in this browser.';
+            startBtn.disabled = true;
+        }
+
+        // Process the transcript to extract fitness data
+        function processTranscript() {
+            const text = transcript.textContent.trim();
+            if (!text) return;
+            
+            status.textContent = 'Processing speech...';
+            
+            // Here we would ideally use a more sophisticated NLP model
+            // This is a simple rule-based extraction as a proof of concept
+            
+            // Extract date (default to today if not specified)
+            let date = new Date();
+            const todayRegex = /today/i;
+            const yesterdayRegex = /yesterday/i;
+            
+            if (yesterdayRegex.test(text)) {
+                date.setDate(date.getDate() - 1);
+            }
+            
+            // Format date as DD/MM/YYYY
+            const formattedDate = formatDate(date);
+            
+            // Extract miles run
+            let milesRun = 0;
+            const milesRegex = /ran\s+(\d+\.?\d*)\s*miles?/i;
+            const milesMatch = text.match(milesRegex);
+            if (milesMatch) {
+                milesRun = parseFloat(milesMatch[1]);
+            }
+            
+            // Extract push-ups
+            let pressUps = 0;
+            const pushupRegex = /(\d+)\s*(push\s*ups?|press\s*ups?)/i;
+            const pushupMatch = text.match(pushupRegex);
+            if (pushupMatch) {
+                pressUps = parseInt(pushupMatch[1]);
+            }
+            
+            // Extract sit-ups
+            let sitUps = 0;
+            const situpRegex = /(\d+)\s*sit\s*ups?/i;
+            const situpMatch = text.match(situpRegex);
+            if (situpMatch) {
+                sitUps = parseInt(situpMatch[1]);
+            }
+            
+            // Update the status
+            status.textContent = `Extracted: ${milesRun} miles run, ${pressUps} pushups, ${sitUps} situps for ${formattedDate}`;
+            
+            // Look for existing entry for this date
+            const existingIndex = fitnessData.findIndex(entry => entry.date === formattedDate);
+            
+            if (existingIndex >= 0) {
+                // Update existing entry
+                if (milesRun > 0) fitnessData[existingIndex].milesRun = milesRun;
+                if (pressUps > 0) fitnessData[existingIndex].pressUps = pressUps;
+                if (sitUps > 0) fitnessData[existingIndex].sitUps = sitUps;
+            } else {
+                // Create new entry with default values
+                fitnessData.push({
+                    date: formattedDate,
+                    wakeUpTime: '08:00',
+                    milesRun: milesRun,
+                    pressUps: pressUps,
+                    sitUps: sitUps,
+                    backs: 0,
+                    headUps: 0,
+                    guitarHours: 0,
+                    drinks: 0,
+                    flossed: 'No',
+                    finasteride: 'No'
+                });
+            }
+            
+            // Update table
+            renderTable();
+        }
+
+        // Render table with current data
+        function renderTable() {
+            tableBody.innerHTML = '';
+            
+            // Sort data by date (newest first)
+            fitnessData.sort((a, b) => {
+                const dateA = a.date.split('/').reverse().join('');
+                const dateB = b.date.split('/').reverse().join('');
+                return dateB.localeCompare(dateA);
+            });
+            
+            fitnessData.forEach((entry, index) => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${entry.date}</td>
+                    <td>${entry.wakeUpTime}</td>
+                    <td>${entry.milesRun}</td>
+                    <td>${entry.pressUps}</td>
+                    <td>${entry.sitUps}</td>
+                    <td>${entry.backs}</td>
+                    <td>${entry.headUps}</td>
+                    <td>${entry.guitarHours}</td>
+                    <td>${entry.drinks}</td>
+                    <td>${entry.flossed}</td>
+                    <td>${entry.finasteride}</td>
+                    <td>
+                        <button class="edit-btn" data-index="${index}">Edit</button>
+                        <button class="delete-btn" data-index="${index}">Delete</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+            
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = this.getAttribute('data-index');
+                    editEntry(index);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = this.getAttribute('data-index');
+                    if (confirm('Are you sure you want to delete this entry?')) {
+                        fitnessData.splice(index, 1);
+                        renderTable();
+                    }
+                });
+            });
+        }
+
+        // Edit an existing entry
+        function editEntry(index) {
+            const entry = fitnessData[index];
+            
+            // Fill the form with the entry data
+            document.getElementById('datePicker').value = parseDate(entry.date);
+            document.getElementById('wakeTime').value = entry.wakeUpTime;
+            document.getElementById('milesRun').value = entry.milesRun;
+            document.getElementById('pressUps').value = entry.pressUps;
+            document.getElementById('sitUps').value = entry.sitUps;
+            document.getElementById('backs').value = entry.backs;
+            document.getElementById('headUps').value = entry.headUps;
+            document.getElementById('guitarHours').value = entry.guitarHours;
+            document.getElementById('drinks').value = entry.drinks;
+            document.getElementById('flossed').value = entry.flossed;
+            document.getElementById('finasteride').value = entry.finasteride;
+            
+            // Change the Add Entry button to Update Entry
+            addEntryBtn.textContent = 'Update Entry';
+            addEntryBtn.setAttribute('data-edit-index', index);
+            
+            // Scroll to the form
+            document.querySelector('.form-entry').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Convert data to CSV
+        function convertToCSV() {
+            // Define headers
+            const headers = ['Date', 'Wake Up Time', 'Miles Run', 'Press Ups', 'Sit Ups', 'Backs', 'Head Ups', 
+                            'Guitar Played / Hrs', 'Drinks', 'Flossed', 'Finasteride'];
+            
+            // Sort data by date (oldest first for CSV)
+            const sortedData = [...fitnessData].sort((a, b) => {
+                const dateA = a.date.split('/').reverse().join('');
+                const dateB = b.date.split('/').reverse().join('');
+                return dateA.localeCompare(dateB);
+            });
+            
+            // Create CSV rows
+            const csvRows = [];
+            csvRows.push(headers.join(','));
+            
+            sortedData.forEach(entry => {
+                const values = [
+                    entry.date,
+                    entry.wakeUpTime,
+                    entry.milesRun,
+                    entry.pressUps,
+                    entry.sitUps,
+                    entry.backs,
+                    entry.headUps,
+                    entry.guitarHours,
+                    entry.drinks,
+                    entry.flossed,
+                    entry.finasteride
+                ];
+                csvRows.push(values.join(','));
+            });
+            
+            return csvRows.join('\n');
+        }
+
+        // Parse CSV data
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            const headers = lines[0].split(',');
+            
+            const parsedData = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = lines[i].split(',');
+                const entry = {
+                    date: values[0] || '',
+                    wakeUpTime: values[1] || '',
+                    milesRun: parseFloat(values[2]) || 0,
+                    pressUps: parseInt(values[3]) || 0,
+                    sitUps: parseInt(values[4]) || 0,
+                    backs: parseInt(values[5]) || 0,
+                    headUps: parseInt(values[6]) || 0,
+                    guitarHours: parseFloat(values[7]) || 0,
+                    drinks: parseInt(values[8]) || 0,
+                    flossed: values[9] || 'No',
+                    finasteride: values[10] || 'No'
+                };
+                
+                parsedData.push(entry);
+            }
+            
+            return parsedData;
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', () => {
+            if (recognition) {
+                transcript.textContent = '';
+                recognition.start();
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (recognition && isRecording) {
+                recognition.stop();
+            }
+        });
+
+        saveBtn.addEventListener('click', () => {
+            // In a real application, this would save to a GitHub repository
+            alert('In a full implementation, this would commit changes to your GitHub repository.');
+            
+            // For the demo, we'll just update the local data
+            status.textContent = 'Changes saved locally (demo mode)';
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const csv = convertToCSV();
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'fitness_tracker.csv');
+            a.click();
+        });
+
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    fitnessData = parseCSV(event.target.result);
+                    renderTable();
+                    status.textContent = 'CSV file imported successfully';
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        addEntryBtn.addEventListener('click', () => {
+            const editIndex = addEntryBtn.getAttribute('data-edit-index');
+            
+            const newEntry = {
+                date: formatDate(document.getElementById('datePicker').value),
+                wakeUpTime: document.getElementById('wakeTime').value,
+                milesRun: parseFloat(document.getElementById('milesRun').value) || 0,
+                pressUps: parseInt(document.getElementById('pressUps').value) || 0,
+                sitUps: parseInt(document.getElementById('sitUps').value) || 0,
+                backs: parseInt(document.getElementById('backs').value) || 0,
+                headUps: parseInt(document.getElementById('headUps').value) || 0,
+                guitarHours: parseFloat(document.getElementById('guitarHours').value) || 0,
+                drinks: parseInt(document.getElementById('drinks').value) || 0,
+                flossed: document.getElementById('flossed').value,
+                finasteride: document.getElementById('finasteride').value
+            };
+            
+            if (editIndex !== null) {
+                // Update existing entry
+                fitnessData[editIndex] = newEntry;
+                addEntryBtn.textContent = 'Add Entry';
+                addEntryBtn.removeAttribute('data-edit-index');
+            } else {
+                // Check if entry for this date already exists
+                const existingIndex = fitnessData.findIndex(entry => entry.date === newEntry.date);
+                
+                if (existingIndex >= 0) {
+                    if (confirm('An entry for this date already exists. Do you want to update it?')) {
+                        fitnessData[existingIndex] = newEntry;
+                    } else {
+                        return;
+                    }
+                } else {
+                    // Add new entry
+                    fitnessData.push(newEntry);
+                }
+            }
+            
+            // Clear form
+            document.getElementById('datePicker').value = '';
+            document.getElementById('wakeTime').value = '';
+            document.getElementById('milesRun').value = '';
+            document.getElementById('pressUps').value = '';
+            document.getElementById('sitUps').value = '';
+            document.getElementById('backs').value = '';
+            document.getElementById('headUps').value = '';
+            document.getElementById('guitarHours').value = '';
+            document.getElementById('drinks').value = '';
+            document.getElementById('flossed').value = 'Yes';
+            document.getElementById('finasteride').value = 'Yes';
+            
+            // Update table
+            renderTable();
+        });
+
+        // Initialize table on page load
+        renderTable();
+
+        // Set today's date in the date picker by default
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        document.getElementById('datePicker').value = `${year}-${month}-${day}`;
+    </script>
+</body>
+</html>
