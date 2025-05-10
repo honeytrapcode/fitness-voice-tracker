@@ -481,7 +481,16 @@ function processTranscript(transcript) {
                     const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
                     const targetDay = weekdays.indexOf(match[1].toLowerCase());
                     const currentDay = entryDate.getDay();
-                    const daysToSubtract = (currentDay - targetDay + 7) % 7;
+                    
+                    // If we mention a day earlier than today in the week, we'll go back to that day
+                    // If we mention today or a future day, we'll go back to the previous instance of that day
+                    let daysToSubtract;
+                    if (targetDay < currentDay || (targetDay === currentDay && !/today/i.test(transcript))) {
+                        daysToSubtract = (currentDay - targetDay);
+                    } else {
+                        daysToSubtract = (currentDay - targetDay + 7);
+                    }
+                    
                     entryDate.setDate(entryDate.getDate() - daysToSubtract);
                 }
             }
@@ -489,6 +498,7 @@ function processTranscript(transcript) {
         }
     }
     
+    // Format the date properly for storage
     const formattedDate = formatDate(entryDate);
     
     // Find or create entry for the date
@@ -518,6 +528,9 @@ function processTranscript(transcript) {
         entry.milesRun = runMatch[1];
         dataUpdated = true;
     }
+    
+    // Rest of the processing code remains the same...
+    // (Keeping all other pattern matching code)
     
     // Process push-ups/press-ups
     const pushupPattern = /(\d+)\s*(?:push[ -]?ups?|press[ -]?ups?)/i;
@@ -567,7 +580,7 @@ function processTranscript(transcript) {
         dataUpdated = true;
     }
     
-    // Process wake-up time
+    // Process wake-up time with improved handling
     const wakeupPattern = /(?:woke|wake|got) (?:up)?\s*(?:at)?\s*(\d+):?(\d+)?\s*(am|pm)?/i;
     const wakeupMatch = transcript.match(wakeupPattern);
     if (wakeupMatch) {
@@ -575,14 +588,25 @@ function processTranscript(transcript) {
         const minutes = wakeupMatch[2] ? parseInt(wakeupMatch[2]) : 0;
         const period = wakeupMatch[3] ? wakeupMatch[3].toLowerCase() : null;
         
-        // Convert to 24-hour format
+        // Convert to 24-hour format with better handling of AM/PM
         if (period === 'pm' && hours < 12) {
             hours += 12;
         } else if (period === 'am' && hours === 12) {
             hours = 0;
+        } else if (!period) {
+            // If no AM/PM specified, make a reasonable assumption
+            // Most people wake up in the morning, so if the hour is 1-11, assume AM
+            if (hours >= 1 && hours <= 11) {
+                // Assume morning hours
+            } else if (hours >= 12 && hours <= 23) {
+                // Keep afternoon/evening hours as they are
+            }
         }
         
-        // Format time
+        // Format time properly, ensuring hours are 0-23
+        hours = Math.max(0, Math.min(23, hours));
+        
+        // Format time with leading zeros
         const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
         entry.wakeTime = formattedTime;
         dataUpdated = true;
@@ -622,91 +646,82 @@ function saveFitnessData(data) {
     localStorage.setItem('fitnessData', JSON.stringify(data));
 }
 
+// Enhanced Add Manual Entry Function
 function addManualEntry(fitnessData) {
-    const date = document.getElementById('datePicker').value;
-    const wakeTime = document.getElementById('wakeTime').value;
-    const milesRun = document.getElementById('milesRun').value;
-    const pressUps = document.getElementById('pressUps').value;
-    const sitUps = document.getElementById('sitUps').value;
-    const backs = document.getElementById('backs').value;
-    const headUps = document.getElementById('headUps').value;
-    const guitarHours = document.getElementById('guitarHours').value;
-    const drinks = document.getElementById('drinks').value;
-    const flossed = document.getElementById('flossed').value;
-    const finasteride = document.getElementById('finasteride').value;
-    
-    // Validate required field
-    if (!date) {
+    const fields = [
+        'datePicker', 'wakeTime', 'milesRun', 'pressUps', 'sitUps',
+        'backs', 'headUps', 'guitarHours', 'drinks', 'flossed', 'finasteride'
+    ];
+
+    const values = Object.fromEntries(fields.map(id => [id, document.getElementById(id).value]));
+
+    if (!values.datePicker) {
         alert('Date is required');
         return;
     }
-    
-    // Check if entry for date already exists
-    const existingEntryIndex = fitnessData.findIndex(item => item.date === date);
-    
-    if (existingEntryIndex !== -1) {
-        // Update existing entry
-        fitnessData[existingEntryIndex] = {
-            ...fitnessData[existingEntryIndex],
-            wakeTime: wakeTime || fitnessData[existingEntryIndex].wakeTime,
-            milesRun: milesRun || fitnessData[existingEntryIndex].milesRun,
-            pressUps: pressUps || fitnessData[existingEntryIndex].pressUps,
-            sitUps: sitUps || fitnessData[existingEntryIndex].sitUps,
-            backs: backs || fitnessData[existingEntryIndex].backs,
-            headUps: headUps || fitnessData[existingEntryIndex].headUps,
-            guitarHours: guitarHours || fitnessData[existingEntryIndex].guitarHours,
-            drinks: drinks || fitnessData[existingEntryIndex].drinks,
-            flossed: flossed || fitnessData[existingEntryIndex].flossed,
-            finasteride: finasteride || fitnessData[existingEntryIndex].finasteride
-        };
-    } else {
-        // Create new entry
-        fitnessData.push({
-            date,
-            wakeTime,
-            milesRun,
-            pressUps,
-            sitUps,
-            backs,
-            headUps,
-            guitarHours,
-            drinks,
-            flossed,
-            finasteride
-        });
+
+    try {
+        const testDate = new Date(values.datePicker);
+        if (isNaN(testDate.getTime())) throw new Error();
+    } catch {
+        alert('Invalid date. Please use YYYY-MM-DD format.');
+        return;
     }
-    
-    // Sort by date (newest first)
+
+    const existingIndex = fitnessData.findIndex(item => item.date === values.datePicker);
+    if (existingIndex !== -1) {
+        fitnessData[existingIndex] = { ...fitnessData[existingIndex], ...values, date: values.datePicker };
+    } else {
+        fitnessData.push({ ...values, date: values.datePicker });
+    }
+
     fitnessData.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    // Clear form (except date)
-    document.getElementById('wakeTime').value = '';
-    document.getElementById('milesRun').value = '';
-    document.getElementById('pressUps').value = '';
-    document.getElementById('sitUps').value = '';
-    document.getElementById('backs').value = '';
-    document.getElementById('headUps').value = '';
-    document.getElementById('guitarHours').value = '';
-    document.getElementById('drinks').value = '';
-    document.getElementById('flossed').value = 'Yes';
-    document.getElementById('finasteride').value = 'Yes';
-    
+
+    fields.slice(1).forEach(id => {
+        document.getElementById(id).value = (id === 'flossed' || id === 'finasteride') ? 'Yes' : '';
+    });
+
     document.getElementById('status').textContent = 'Entry added successfully!';
 }
 
+
 // Table Rendering
+// Enhanced Table Rendering Function
 function renderTable(data) {
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = '';
     
+    // Ensure we can actually sort the dates (validate dates first)
+    const validData = data.filter(entry => {
+        try {
+            return !isNaN(new Date(entry.date).getTime());
+        } catch (e) {
+            console.error('Invalid date entry:', entry);
+            return false;
+        }
+    });
+    
     // Sort by date (newest first)
-    const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const sortedData = [...validData].sort((a, b) => {
+        try {
+            return new Date(b.date) - new Date(a.date);
+        } catch (e) {
+            console.error('Error sorting dates:', e);
+            return 0;
+        }
+    });
     
     sortedData.forEach((entry, index) => {
         const row = document.createElement('tr');
         
-        // Format date for display
-        const displayDate = formatDateForDisplay(entry.date);
+        // Format date for display with error handling
+        let displayDate;
+        try {
+            displayDate = formatDateForDisplay(entry.date);
+        } catch (e) {
+            console.error('Error formatting date:', e, entry.date);
+            displayDate = 'Invalid date';
+        }
         
         row.innerHTML = `
             <td>${displayDate}</td>
@@ -743,7 +758,7 @@ function renderTable(data) {
     });
 }
 
-// Helper Functions
+// Enhanced Date Processing Functions
 function formatDate(date) {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -752,38 +767,57 @@ function formatDate(date) {
 }
 
 function formatDateForDisplay(dateStr) {
-    const date = new Date(dateStr);
-    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-    return date.toLocaleDateString('en-US', options);
+    // Make sure we have a valid date string
+    if (!dateStr) return '';
+    
+    try {
+        // Parse the date - handle both YYYY-MM-DD format and other formats
+        const date = new Date(dateStr);
+        
+        // Check if date is valid before formatting
+        if (isNaN(date.getTime())) {
+            console.error('Invalid date:', dateStr);
+            return 'Invalid date';
+        }
+        
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        return date.toLocaleDateString('en-US', options);
+    } catch (error) {
+        console.error('Date formatting error:', error);
+        return 'Invalid date';
+    }
 }
 
+// Enhanced Edit Entry Function
 function editEntry(index) {
     const fitnessData = loadFitnessData();
     const entry = fitnessData[index];
-    
-    // Fill form with entry data
-    document.getElementById('datePicker').value = entry.date;
-    document.getElementById('wakeTime').value = entry.wakeTime || '';
-    document.getElementById('milesRun').value = entry.milesRun || '';
-    document.getElementById('pressUps').value = entry.pressUps || '';
-    document.getElementById('sitUps').value = entry.sitUps || '';
-    document.getElementById('backs').value = entry.backs || '';
-    document.getElementById('headUps').value = entry.headUps || '';
-    document.getElementById('guitarHours').value = entry.guitarHours || '';
-    document.getElementById('drinks').value = entry.drinks || '';
-    document.getElementById('flossed').value = entry.flossed || 'Yes';
-    document.getElementById('finasteride').value = entry.finasteride || 'Yes';
-    
-    // Delete the entry as we'll add it back when form is submitted
+    if (!entry) {
+        document.getElementById('status').textContent = 'Error: Entry not found';
+        return;
+    }
+
+    const fields = ['date', 'wakeTime', 'milesRun', 'pressUps', 'sitUps', 'backs', 'headUps', 'guitarHours', 'drinks', 'flossed', 'finasteride'];
+    fields.forEach(field => {
+        const el = document.getElementById(field === 'date' ? 'datePicker' : field);
+        if (el) el.value = entry[field] || (field === 'flossed' || field === 'finasteride' ? 'Yes' : '');
+    });
+
     fitnessData.splice(index, 1);
     saveFitnessData(fitnessData);
     renderTable(fitnessData);
-    
-    document.getElementById('status').textContent = 'Editing entry for ' + formatDateForDisplay(entry.date);
-    
-    // Scroll to form
+
+    let displayDate;
+    try {
+        displayDate = formatDateForDisplay(entry.date);
+    } catch {
+        displayDate = 'this entry';
+    }
+
+    document.getElementById('status').textContent = `Editing entry for ${displayDate}`;
     document.querySelector('.form-entry').scrollIntoView({ behavior: 'smooth' });
 }
+
 
 function deleteEntry(index) {
     if (confirm('Are you sure you want to delete this entry?')) {
@@ -883,28 +917,53 @@ function uploadCSV(file) {
             }
             fields.push(currentField); // Add the last field
             
-            // Create entry object
-            const entry = {
-                date: fields[0],
-                wakeTime: fields[1],
-                milesRun: fields[2],
-                pressUps: fields[3],
-                sitUps: fields[4],
-                backs: fields[5],
-                headUps: fields[6],
-                guitarHours: fields[7],
-                drinks: fields[8],
-                flossed: fields[9],
-                finasteride: fields[10]
-            };
+            // Validate the date before creating entry
+            let dateField = fields[0].trim();
+            let isValidDate = false;
             
-            data.push(entry);
+            try {
+                const testDate = new Date(dateField);
+                isValidDate = !isNaN(testDate.getTime());
+                
+                // If it's a valid date but not in YYYY-MM-DD format, convert it
+                if (isValidDate && !dateField.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    dateField = formatDate(testDate);
+                }
+            } catch (e) {
+                console.error('Invalid date in CSV:', dateField);
+            }
+            
+            if (isValidDate) {
+                // Create entry object with validated date
+                const entry = {
+                    date: dateField,
+                    wakeTime: fields[1] || '',
+                    milesRun: fields[2] || '',
+                    pressUps: fields[3] || '',
+                    sitUps: fields[4] || '',
+                    backs: fields[5] || '',
+                    headUps: fields[6] || '',
+                    guitarHours: fields[7] || '',
+                    drinks: fields[8] || '',
+                    flossed: fields[9] || '',
+                    finasteride: fields[10] || ''
+                };
+                
+                data.push(entry);
+            } else {
+                console.warn('Skipping row with invalid date:', lines[i]);
+            }
+        }
+        
+        if (data.length === 0) {
+            document.getElementById('status').textContent = 'No valid data found in the CSV file';
+            return;
         }
         
         // Save data and update table
         saveFitnessData(data);
         renderTable(data);
-        document.getElementById('status').textContent = 'CSV data imported successfully!';
+        document.getElementById('status').textContent = `CSV data imported successfully! (${data.length} entries)`;
     };
     
     reader.onerror = function() {
@@ -913,6 +972,18 @@ function uploadCSV(file) {
     
     reader.readAsText(file);
 }
+
+function isValidDate(dateStr) {
+    if (!dateStr) return false;
+    
+    try {
+        const date = new Date(dateStr);
+        return !isNaN(date.getTime());
+    } catch (e) {
+        return false;
+    }
+}
+
 
 // GitHub Integration Functions
 async function saveFitnessDataToGitHub() {
