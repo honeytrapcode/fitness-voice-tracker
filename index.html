@@ -316,7 +316,789 @@
 // 1. Enhanced GitHub Authentication with Token Encryption and OAuth
 
 // Add this code near the top of your script section, replacing the existing GitHub config code
+// Main application initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize data storage
+    let fitnessData = loadFitnessData();
+    renderTable(fitnessData);
 
+    // Initialize date picker with today's date
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    document.getElementById('datePicker').value = formattedDate;
+
+    // Speech recognition setup
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        let finalTranscript = '';
+        
+        // Handle Speech Recognition
+        setupSpeechRecognition(recognition);
+        
+        // Speech Recording Controls
+        document.getElementById('startBtn').addEventListener('click', function() {
+            startRecording(recognition);
+        });
+        
+        document.getElementById('stopBtn').addEventListener('click', function() {
+            stopRecording(recognition);
+        });
+    } else {
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('status').textContent = 'Speech recognition not supported in this browser. Please use Chrome or Edge.';
+    }
+    
+    // Data Management
+    document.getElementById('saveBtn').addEventListener('click', function() {
+        saveFitnessData(fitnessData);
+        document.getElementById('status').textContent = 'Data saved successfully!';
+    });
+    
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        downloadCSV(fitnessData);
+    });
+    
+    document.getElementById('uploadBtn').addEventListener('click', function() {
+        document.getElementById('fileInput').click();
+    });
+    
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            uploadCSV(file);
+        }
+    });
+    
+    // Manual Entry Form
+    document.getElementById('addEntryBtn').addEventListener('click', function() {
+        addManualEntry(fitnessData);
+        renderTable(fitnessData);
+        saveFitnessData(fitnessData);
+    });
+    
+    // Load GitHub config
+    loadGitHubConfig();
+});
+
+// Speech Recognition Functions
+function setupSpeechRecognition(recognition) {
+    let finalTranscript = '';
+    const transcriptDiv = document.getElementById('transcript');
+    const statusDiv = document.getElementById('status');
+    
+    recognition.onstart = function() {
+        statusDiv.innerHTML = '<span class="record-indicator"></span> Recording...';
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = false;
+    };
+    
+    recognition.onend = function() {
+        statusDiv.textContent = 'Recording stopped. Processing...';
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true;
+        
+        // Process the final transcript
+        if (finalTranscript) {
+            processTranscript(finalTranscript);
+        }
+    };
+    
+    recognition.onresult = function(event) {
+        let interimTranscript = '';
+        
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            
+            if (event.results[i].isFinal) {
+                finalTranscript += transcript + ' ';
+            } else {
+                interimTranscript += transcript;
+            }
+        }
+        
+        transcriptDiv.innerHTML = 
+            '<p><strong>Final:</strong> ' + finalTranscript + '</p>' +
+            '<p><em>Interim:</em> ' + interimTranscript + '</p>';
+    };
+    
+    recognition.onerror = function(event) {
+        statusDiv.textContent = 'Error occurred in recognition: ' + event.error;
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true;
+    };
+}
+
+function startRecording(recognition) {
+    try {
+        recognition.start();
+    } catch (error) {
+        console.error('Recognition error:', error);
+        document.getElementById('status').textContent = 'Error starting recording. Please try again.';
+    }
+}
+
+function stopRecording(recognition) {
+    try {
+        recognition.stop();
+    } catch (error) {
+        console.error('Recognition error:', error);
+        document.getElementById('status').textContent = 'Error stopping recording. Please refresh the page.';
+    }
+}
+
+// Transcript Processing Function
+function processTranscript(transcript) {
+    const statusDiv = document.getElementById('status');
+    statusDiv.textContent = 'Processing transcript...';
+    
+    const fitnessData = loadFitnessData();
+    let dataUpdated = false;
+    let entryDate = new Date();
+    
+    // Check for date indicators
+    const datePatterns = [
+        { regex: /yesterday/i, days: -1 },
+        { regex: /today/i, days: 0 },
+        { regex: /last week/i, days: -7 },
+        { regex: /last month/i, days: -30 },
+        { regex: /(on|for) (monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i, weekday: true }
+    ];
+    
+    // Set date based on keywords
+    for (const pattern of datePatterns) {
+        if (pattern.regex.test(transcript)) {
+            if (pattern.days !== undefined) {
+                entryDate.setDate(entryDate.getDate() + pattern.days);
+            } else if (pattern.weekday) {
+                const match = transcript.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+                if (match) {
+                    const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                    const targetDay = weekdays.indexOf(match[1].toLowerCase());
+                    const currentDay = entryDate.getDay();
+                    const daysToSubtract = (currentDay - targetDay + 7) % 7;
+                    entryDate.setDate(entryDate.getDate() - daysToSubtract);
+                }
+            }
+            break;
+        }
+    }
+    
+    const formattedDate = formatDate(entryDate);
+    
+    // Find or create entry for the date
+    let entry = fitnessData.find(item => item.date === formattedDate);
+    if (!entry) {
+        entry = {
+            date: formattedDate,
+            wakeTime: '',
+            milesRun: '',
+            pressUps: '',
+            sitUps: '',
+            backs: '',
+            headUps: '',
+            guitarHours: '',
+            drinks: '',
+            flossed: '',
+            finasteride: ''
+        };
+        fitnessData.push(entry);
+        dataUpdated = true;
+    }
+    
+    // Process miles run
+    const runPattern = /(?:ran|did|completed|finished)?\s*(\d+(?:\.\d+)?)\s*miles?/i;
+    const runMatch = transcript.match(runPattern);
+    if (runMatch) {
+        entry.milesRun = runMatch[1];
+        dataUpdated = true;
+    }
+    
+    // Process push-ups/press-ups
+    const pushupPattern = /(\d+)\s*(?:push[ -]?ups?|press[ -]?ups?)/i;
+    const pushupMatch = transcript.match(pushupPattern);
+    if (pushupMatch) {
+        entry.pressUps = pushupMatch[1];
+        dataUpdated = true;
+    }
+    
+    // Process sit-ups
+    const situpPattern = /(\d+)\s*sit[ -]?ups?/i;
+    const situpMatch = transcript.match(situpPattern);
+    if (situpMatch) {
+        entry.sitUps = situpMatch[1];
+        dataUpdated = true;
+    }
+    
+    // Process backs
+    const backsPattern = /(\d+)\s*backs/i;
+    const backsMatch = transcript.match(backsPattern);
+    if (backsMatch) {
+        entry.backs = backsMatch[1];
+        dataUpdated = true;
+    }
+    
+    // Process head-ups
+    const headupsPattern = /(\d+)\s*head[ -]?ups?/i;
+    const headupsMatch = transcript.match(headupsPattern);
+    if (headupsMatch) {
+        entry.headUps = headupsMatch[1];
+        dataUpdated = true;
+    }
+    
+    // Process guitar playing
+    const guitarPattern = /(?:played|practiced)?\s*guitar\s*(?:for)?\s*(\d+(?:\.\d+)?)\s*(?:hour|hr|hours|hrs)/i;
+    const guitarMatch = transcript.match(guitarPattern);
+    if (guitarMatch) {
+        entry.guitarHours = guitarMatch[1];
+        dataUpdated = true;
+    }
+    
+    // Process drinks
+    const drinksPattern = /(\d+)\s*drinks?/i;
+    const drinksMatch = transcript.match(drinksPattern);
+    if (drinksMatch) {
+        entry.drinks = drinksMatch[1];
+        dataUpdated = true;
+    }
+    
+    // Process wake-up time
+    const wakeupPattern = /(?:woke|wake|got) (?:up)?\s*(?:at)?\s*(\d+):?(\d+)?\s*(am|pm)?/i;
+    const wakeupMatch = transcript.match(wakeupPattern);
+    if (wakeupMatch) {
+        let hours = parseInt(wakeupMatch[1]);
+        const minutes = wakeupMatch[2] ? parseInt(wakeupMatch[2]) : 0;
+        const period = wakeupMatch[3] ? wakeupMatch[3].toLowerCase() : null;
+        
+        // Convert to 24-hour format
+        if (period === 'pm' && hours < 12) {
+            hours += 12;
+        } else if (period === 'am' && hours === 12) {
+            hours = 0;
+        }
+        
+        // Format time
+        const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        entry.wakeTime = formattedTime;
+        dataUpdated = true;
+    }
+    
+    // Process flossing
+    if (/(?:did|have|had|completed)\s*floss(?:ing|ed)?/i.test(transcript) || 
+        /floss(?:ing|ed)?/i.test(transcript)) {
+        entry.flossed = 'Yes';
+        dataUpdated = true;
+    }
+    
+    // Process finasteride
+    if (/(?:took|take|had|have)\s*finasteride/i.test(transcript) || 
+        /finasteride/i.test(transcript)) {
+        entry.finasteride = 'Yes';
+        dataUpdated = true;
+    }
+    
+    // Update storage and table if data was updated
+    if (dataUpdated) {
+        saveFitnessData(fitnessData);
+        renderTable(fitnessData);
+        statusDiv.textContent = 'Fitness data updated based on speech input!';
+    } else {
+        statusDiv.textContent = 'No fitness data detected in the speech.';
+    }
+}
+
+// Data Management Functions
+function loadFitnessData() {
+    const storedData = localStorage.getItem('fitnessData');
+    return storedData ? JSON.parse(storedData) : [];
+}
+
+function saveFitnessData(data) {
+    localStorage.setItem('fitnessData', JSON.stringify(data));
+}
+
+function addManualEntry(fitnessData) {
+    const date = document.getElementById('datePicker').value;
+    const wakeTime = document.getElementById('wakeTime').value;
+    const milesRun = document.getElementById('milesRun').value;
+    const pressUps = document.getElementById('pressUps').value;
+    const sitUps = document.getElementById('sitUps').value;
+    const backs = document.getElementById('backs').value;
+    const headUps = document.getElementById('headUps').value;
+    const guitarHours = document.getElementById('guitarHours').value;
+    const drinks = document.getElementById('drinks').value;
+    const flossed = document.getElementById('flossed').value;
+    const finasteride = document.getElementById('finasteride').value;
+    
+    // Validate required field
+    if (!date) {
+        alert('Date is required');
+        return;
+    }
+    
+    // Check if entry for date already exists
+    const existingEntryIndex = fitnessData.findIndex(item => item.date === date);
+    
+    if (existingEntryIndex !== -1) {
+        // Update existing entry
+        fitnessData[existingEntryIndex] = {
+            ...fitnessData[existingEntryIndex],
+            wakeTime: wakeTime || fitnessData[existingEntryIndex].wakeTime,
+            milesRun: milesRun || fitnessData[existingEntryIndex].milesRun,
+            pressUps: pressUps || fitnessData[existingEntryIndex].pressUps,
+            sitUps: sitUps || fitnessData[existingEntryIndex].sitUps,
+            backs: backs || fitnessData[existingEntryIndex].backs,
+            headUps: headUps || fitnessData[existingEntryIndex].headUps,
+            guitarHours: guitarHours || fitnessData[existingEntryIndex].guitarHours,
+            drinks: drinks || fitnessData[existingEntryIndex].drinks,
+            flossed: flossed || fitnessData[existingEntryIndex].flossed,
+            finasteride: finasteride || fitnessData[existingEntryIndex].finasteride
+        };
+    } else {
+        // Create new entry
+        fitnessData.push({
+            date,
+            wakeTime,
+            milesRun,
+            pressUps,
+            sitUps,
+            backs,
+            headUps,
+            guitarHours,
+            drinks,
+            flossed,
+            finasteride
+        });
+    }
+    
+    // Sort by date (newest first)
+    fitnessData.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Clear form (except date)
+    document.getElementById('wakeTime').value = '';
+    document.getElementById('milesRun').value = '';
+    document.getElementById('pressUps').value = '';
+    document.getElementById('sitUps').value = '';
+    document.getElementById('backs').value = '';
+    document.getElementById('headUps').value = '';
+    document.getElementById('guitarHours').value = '';
+    document.getElementById('drinks').value = '';
+    document.getElementById('flossed').value = 'Yes';
+    document.getElementById('finasteride').value = 'Yes';
+    
+    document.getElementById('status').textContent = 'Entry added successfully!';
+}
+
+// Table Rendering
+function renderTable(data) {
+    const tableBody = document.getElementById('tableBody');
+    tableBody.innerHTML = '';
+    
+    // Sort by date (newest first)
+    const sortedData = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    sortedData.forEach((entry, index) => {
+        const row = document.createElement('tr');
+        
+        // Format date for display
+        const displayDate = formatDateForDisplay(entry.date);
+        
+        row.innerHTML = `
+            <td>${displayDate}</td>
+            <td>${entry.wakeTime || ''}</td>
+            <td>${entry.milesRun || ''}</td>
+            <td>${entry.pressUps || ''}</td>
+            <td>${entry.sitUps || ''}</td>
+            <td>${entry.backs || ''}</td>
+            <td>${entry.headUps || ''}</td>
+            <td>${entry.guitarHours || ''}</td>
+            <td>${entry.drinks || ''}</td>
+            <td>${entry.flossed || ''}</td>
+            <td>${entry.finasteride || ''}</td>
+            <td>
+                <button class="edit-btn" data-index="${index}">Edit</button>
+                <button class="delete-btn" data-index="${index}">Delete</button>
+            </td>
+        `;
+        
+        tableBody.appendChild(row);
+    });
+    
+    // Add event listeners for edit and delete buttons
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            editEntry(parseInt(this.getAttribute('data-index')));
+        });
+    });
+    
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            deleteEntry(parseInt(this.getAttribute('data-index')));
+        });
+    });
+}
+
+// Helper Functions
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function formatDateForDisplay(dateStr) {
+    const date = new Date(dateStr);
+    const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+}
+
+function editEntry(index) {
+    const fitnessData = loadFitnessData();
+    const entry = fitnessData[index];
+    
+    // Fill form with entry data
+    document.getElementById('datePicker').value = entry.date;
+    document.getElementById('wakeTime').value = entry.wakeTime || '';
+    document.getElementById('milesRun').value = entry.milesRun || '';
+    document.getElementById('pressUps').value = entry.pressUps || '';
+    document.getElementById('sitUps').value = entry.sitUps || '';
+    document.getElementById('backs').value = entry.backs || '';
+    document.getElementById('headUps').value = entry.headUps || '';
+    document.getElementById('guitarHours').value = entry.guitarHours || '';
+    document.getElementById('drinks').value = entry.drinks || '';
+    document.getElementById('flossed').value = entry.flossed || 'Yes';
+    document.getElementById('finasteride').value = entry.finasteride || 'Yes';
+    
+    // Delete the entry as we'll add it back when form is submitted
+    fitnessData.splice(index, 1);
+    saveFitnessData(fitnessData);
+    renderTable(fitnessData);
+    
+    document.getElementById('status').textContent = 'Editing entry for ' + formatDateForDisplay(entry.date);
+    
+    // Scroll to form
+    document.querySelector('.form-entry').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteEntry(index) {
+    if (confirm('Are you sure you want to delete this entry?')) {
+        const fitnessData = loadFitnessData();
+        fitnessData.splice(index, 1);
+        saveFitnessData(fitnessData);
+        renderTable(fitnessData);
+        document.getElementById('status').textContent = 'Entry deleted successfully!';
+    }
+}
+
+// CSV Import/Export Functions
+function downloadCSV(data) {
+    if (data.length === 0) {
+        alert('No data to download');
+        return;
+    }
+    
+    // CSV Headers
+    const csvHeaders = [
+        'Date', 'Wake Up Time', 'Miles Run', 'Press Ups', 'Sit Ups', 
+        'Backs', 'Head Ups', 'Guitar Hours', 'Drinks', 'Flossed', 'Finasteride'
+    ];
+    
+    // Convert data to CSV format
+    const csvRows = [csvHeaders.join(',')];
+    
+    data.forEach(entry => {
+        const row = [
+            entry.date,
+            entry.wakeTime || '',
+            entry.milesRun || '',
+            entry.pressUps || '',
+            entry.sitUps || '',
+            entry.backs || '',
+            entry.headUps || '',
+            entry.guitarHours || '',
+            entry.drinks || '',
+            entry.flossed || '',
+            entry.finasteride || ''
+        ];
+        
+        // Escape fields with commas
+        const formattedRow = row.map(field => {
+            if (field.includes(',')) {
+                return `"${field}"`;
+            }
+            return field;
+        });
+        
+        csvRows.push(formattedRow.join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    
+    // Create a blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'fitness_data.csv');
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function uploadCSV(file) {
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const content = e.target.result;
+        const lines = content.split('\n');
+        
+        // Skip header line
+        const data = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            
+            // Handle quoted fields with commas
+            let fields = [];
+            let inQuotes = false;
+            let currentField = '';
+            
+            for (let char of lines[i]) {
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    fields.push(currentField);
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+            fields.push(currentField); // Add the last field
+            
+            // Create entry object
+            const entry = {
+                date: fields[0],
+                wakeTime: fields[1],
+                milesRun: fields[2],
+                pressUps: fields[3],
+                sitUps: fields[4],
+                backs: fields[5],
+                headUps: fields[6],
+                guitarHours: fields[7],
+                drinks: fields[8],
+                flossed: fields[9],
+                finasteride: fields[10]
+            };
+            
+            data.push(entry);
+        }
+        
+        // Save data and update table
+        saveFitnessData(data);
+        renderTable(data);
+        document.getElementById('status').textContent = 'CSV data imported successfully!';
+    };
+    
+    reader.onerror = function() {
+        document.getElementById('status').textContent = 'Error reading CSV file';
+    };
+    
+    reader.readAsText(file);
+}
+
+// GitHub Integration Functions
+async function saveFitnessDataToGitHub() {
+    if (!githubConfig.isAuthenticated) {
+        alert('Please configure GitHub integration first');
+        return false;
+    }
+    
+    try {
+        const fitnessData = loadFitnessData();
+        if (fitnessData.length === 0) {
+            alert('No data to save to GitHub');
+            return false;
+        }
+        
+        // Convert data to CSV
+        const csvHeaders = [
+            'Date', 'Wake Up Time', 'Miles Run', 'Press Ups', 'Sit Ups', 
+            'Backs', 'Head Ups', 'Guitar Hours', 'Drinks', 'Flossed', 'Finasteride'
+        ];
+        
+        const csvRows = [csvHeaders.join(',')];
+        
+        fitnessData.forEach(entry => {
+            const row = [
+                entry.date,
+                entry.wakeTime || '',
+                entry.milesRun || '',
+                entry.pressUps || '',
+                entry.sitUps || '',
+                entry.backs || '',
+                entry.headUps || '',
+                entry.guitarHours || '',
+                entry.drinks || '',
+                entry.flossed || '',
+                entry.finasteride || ''
+            ];
+            
+            // Escape fields with commas
+            const formattedRow = row.map(field => {
+                if (field && field.includes(',')) {
+                    return `"${field}"`;
+                }
+                return field;
+            });
+            
+            csvRows.push(formattedRow.join(','));
+        });
+        
+        const csvContent = csvRows.join('\n');
+        
+        // Create a file name with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const fileName = `fitness_data_${timestamp}.csv`;
+        
+        // Get SHA of an existing file (if any)
+        let sha = null;
+        try {
+            const fileCheckResponse = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repository}/contents/fitness_data.csv`, {
+                headers: {
+                    'Authorization': `token ${githubConfig.token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (fileCheckResponse.status === 200) {
+                const fileData = await fileCheckResponse.json();
+                sha = fileData.sha;
+            }
+        } catch (error) {
+            console.log('File does not exist yet, will create new');
+        }
+        
+        // Prepare the file content
+        const content = btoa(csvContent); // Base64 encode
+        
+        // Create or update the file
+        const payload = {
+            message: `Update fitness data on ${new Date().toLocaleDateString()}`,
+            content: content,
+            branch: githubConfig.branch
+        };
+        
+        if (sha) {
+            payload.sha = sha;
+        }
+        
+        const response = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repository}/contents/fitness_data.csv`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${githubConfig.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (response.status === 200 || response.status === 201) {
+            return true;
+        } else {
+            const data = await response.json();
+            throw new Error(data.message || 'Failed to save to GitHub');
+        }
+    } catch (error) {
+        console.error('GitHub save error:', error);
+        throw error;
+    }
+}
+
+async function loadFitnessDataFromGitHub() {
+    if (!githubConfig.isAuthenticated) {
+        alert('Please configure GitHub integration first');
+        return false;
+    }
+    
+    try {
+        const response = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repository}/contents/fitness_data.csv`, {
+            headers: {
+                'Authorization': `token ${githubConfig.token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        
+        if (response.status === 200) {
+            const data = await response.json();
+            const content = atob(data.content); // Base64 decode
+            
+            // Parse CSV
+            const lines = content.split('\n');
+            
+            // Skip header line
+            const fitnessData = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                // Handle quoted fields with commas
+                let fields = [];
+                let inQuotes = false;
+                let currentField = '';
+                
+                for (let char of lines[i]) {
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        fields.push(currentField);
+                        currentField = '';
+                    } else {
+                        currentField += char;
+                    }
+                }
+                fields.push(currentField); // Add the last field
+                
+                // Create entry object
+                const entry = {
+                    date: fields[0],
+                    wakeTime: fields[1],
+                    milesRun: fields[2],
+                    pressUps: fields[3],
+                    sitUps: fields[4],
+                    backs: fields[5],
+                    headUps: fields[6],
+                    guitarHours: fields[7],
+                    drinks: fields[8],
+                    flossed: fields[9],
+                    finasteride: fields[10]
+                };
+                
+                fitnessData.push(entry);
+            }
+            
+            // Save data and update table
+            saveFitnessData(fitnessData);
+            renderTable(fitnessData);
+            return true;
+        } else if (response.status === 404) {
+            throw new Error('Fitness data file not found in the repository');
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to load from GitHub');
+        }
+    } catch (error) {
+        console.error('GitHub load error:', error);
+        throw error;
+    }
+}
 // GitHub API Configuration with Enhanced Storage
 let githubConfig = {
   token: '',
