@@ -187,7 +187,6 @@
             <button id="stopBtn" class="stop" disabled>Stop Recording</button>
             <button id="saveBtn" class="save">Save Data</button>
             <button id="downloadBtn">Download CSV</button>
-            <button id="uploadBtn">Upload CSV</button>
             <input type="file" id="fileInput" accept=".csv" class="hidden">
         </div>
 
@@ -665,7 +664,7 @@
         const stopBtn = document.getElementById('stopBtn');
         const saveBtn = document.getElementById('saveBtn');
         const downloadBtn = document.getElementById('downloadBtn');
-        const uploadBtn = document.getElementById('uploadBtn');
+        // const uploadBtn = document.getElementById('uploadBtn');
         const fileInput = document.getElementById('fileInput');
         const addEntryBtn = document.getElementById('addEntryBtn');
         const status = document.getElementById('status');
@@ -1281,9 +1280,9 @@
             a.click();
         });
 
-        uploadBtn.addEventListener('click', () => {
+       /* uploadBtn.addEventListener('click', () => {
             fileInput.click();
-        });
+        });*/
 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
