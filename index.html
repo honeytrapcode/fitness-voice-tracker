@@ -1449,13 +1449,6 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('githubStatus').style.color = '#f39c12';
     }
 });
-
-// Remove the original saveBtn event listener
-// This is done to avoid duplicate event listeners
-saveBtn.removeEventListener('click', function() {
-    alert('In a full implementation, this would commit changes to your GitHub repository.');
-    status.textContent = 'Changes saved locally (demo mode)';
-});
     </script>
 </body>
 </html>
