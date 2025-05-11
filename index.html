@@ -697,13 +697,36 @@
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
             };
+
+            // This function handles the transcript after recording stops
+            function handleTranscriptAfterRecording() {
+                const text = transcript.innerText || transcript.textContent;
+                
+                if (!text || text.trim().length === 0) {
+                    status.textContent = 'No speech detected';
+                    return;
+                }
+                
+                // Call the actual processing function with the transcribed text
+                // Note: The NLP function is named "processTranscript" in your code
+                const result = processTranscript(text, fitnessData, status);
+                
+                if (result && result.success) {
+                    // Update the table to show the new/updated entry
+                    renderTable();
+                    
+                    // Optionally clear the transcript after processing
+                    // transcript.textContent = '';
+                }
+            }
             
             recognition.onend = () => {
                 status.textContent = 'Recording stopped';
                 isRecording = false;
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
-                processTranscript();
+                // Process the transcript after recording stops
+                handleTranscriptAfterRecording();
             };
             
             recognition.onresult = (event) => {
