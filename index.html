@@ -137,7 +137,7 @@
         width: 100%;
         border-collapse: collapse;
         margin-top: 20px;
-        color: #8a0416;
+        color: #ddd;
         overflow-x: auto;
       }
     
@@ -1582,7 +1582,19 @@ window.addEventListener('DOMContentLoaded', () => {
             `Credentials saved for ${username}/${repository} (not connected)`;
         document.getElementById('githubStatus').style.color = '#f39c12';
     }
-    loadGitHubCredentials();
+    
+    const status = document.getElementById('status');
+    status.textContent = 'Loading data from GitHub...';
+    
+    try {
+        const success = await loadFitnessDataFromGitHub();
+        if (success) {
+            status.textContent = 'Data loaded from GitHub successfully';
+        }
+    } catch (error) {
+        status.textContent = `Error loading from GitHub: ${error.message}`;
+    }
+    
 });
     </script>
 </body>
