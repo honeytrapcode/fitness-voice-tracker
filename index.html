@@ -767,30 +767,53 @@
             yesterday: /yesterday/i,
             specificDate: /on\s+(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/i
           },
+        
           time: {
-            wakeUp: /woke\s+(?:up\s+)?(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)?/i
+            // Now supports: "got up", "rose", "was up", etc.
+            wakeUp: /(?:woke\s+(?:up\s+)?|got\s+up\s+|rose\s+|was\s+up\s+)(?:at\s*)?(\d{1,2}):?(\d{2})?\s*(am|pm)?/i
           },
+        
           exercise: {
-            miles: /(?:ran|run|running|jogged)\s+(\d+\.?\d*)\s*miles?/i,
-            pushups: /(\d+)\s*(?:push\s*ups?|press\s*ups?)/i,
-            situps: /(\d+)\s*sit\s*ups?/i,
-            backs: /(\d+)\s*backs?/i,
-            headUps: /(\d+)\s*head\s*ups?/i
+            // Now supports: jogged, ran, went for a run, did 3.5 miles, etc.
+            miles: /(?:(?:ran|run|jogged|went\s+(?:for\s+)?a\s+run|did)\s+)?(\d+\.?\d*)\s*(?:miles?|mi\b)/i,
+        
+            // Added variations: push ups, press ups, did 50 pushups, etc.
+            pushups: /(?:did\s+)?(\d+)\s*(?:push\s*ups?|press\s*ups?)/i,
+        
+            // Added “did” variation
+            situps: /(?:did\s+)?(\d+)\s*sit\s*ups?/i,
+            backs: /(?:did\s+)?(\d+)\s*backs?/i,
+            headUps: /(?:did\s+)?(\d+)\s*head\s*ups?/i
           },
+        
           activities: {
-            guitar1: /(?:played|practice[d]?)\s+guitar\s+(?:for\s+)?(\d+\.?\d*)\s*(?:hours?|hrs?)/i,
-            guitar2: /(\d+\.?\d*)\s*(?:hours?|hrs?)\s+(?:of\s+)?guitar/i,
-            drinks1: /(\d+)\s*drinks?/i,
+            // More guitar phrasing, including “jammed”, “played guitar for”, etc.
+            guitar1: /(?:played|practice[d]?|jammed)\s+(?:the\s+)?guitar\s+(?:for\s+)?(\d+\.?\d*)\s*(?:hours?|hrs?)/i,
+            guitar2: /(\d+\.?\d*)\s*(?:hours?|hrs?)\s+(?:of\s+)?(?:guitar|practice|playing)/i,
+        
+            // Support casual phrasing: “3 drinks”, “drank 3 beers”, “had 2 glasses”
+            drinks1: /(?:had\s+)?(\d+)\s*(?:drinks?|beers?|glasses?|shots?)/i,
             drinks2: /(?:had|drank|consumed)\s+(\d+)\s*(?:drinks?|beers?|glasses?|shots?)/i
           },
+        
           health: {
-            flossYes: /(?:flossed|did floss|i flossed)/i,
-            flossNo: /(?:didn't floss|did not floss|no floss)/i,
+            // Added more phrases for YES
+            flossYes: /(?:flossed|did\s+floss|i\s+flossed|brushed\s+and\s+flossed)/i,
+        
+            // Added contractions + negation
+            flossNo: /(?:(?:did(?:n't| not)|no)\s+floss|forgot\s+to\s+floss)/i,
+        
             finYes: /(?:took|had|used)\s+(?:my\s+)?finasteride/i,
-            finNo: /(?:didn't take|did not take|no finasteride|forgot finasteride)/i,
-            mood: /mood(?:\s+(?:is|was|:))?\s+(\d+)/i
+            finNo: /(?:did(?:n't| not)\s+take|no\s+finasteride|forgot\s+finasteride)/i,
+        
+            // Support “mood is 8”, “feeling 7”, “my mood today was 6”
+            mood: /(?:mood|feeling)(?:\s+(?:is|was|:))?\s+(\d{1,2})/i
           }
         };
+
+        // New generalized pattern for detecting multiple numeric activities
+        const MULTI_METRIC_PATTERN = /(\d+\.?\d*)\s*(press\s*ups?|push\s*ups?|sit\s*ups?|backs?|head\s*ups?|miles|drinks?|beers?)/gi;
+
         
         /**
          * Format a Date object to DD/MM/YYYY
@@ -900,7 +923,39 @@
           }
           return null;
         }
+        function extractMultipleMetrics(text) {
+          const matches = text.matchAll(MULTI_METRIC_PATTERN);
+          const metrics = {
+            pressUps: null,
+            sitUps: null,
+            backs: null,
+            headUps: null,
+            milesRun: null,
+            drinks: null
+          };
         
+          for (const match of matches) {
+            const value = parseFloat(match[1]);
+            const label = match[2].toLowerCase();
+        
+            if (label.includes('push') || label.includes('press')) {
+              metrics.pressUps = value;
+            } else if (label.includes('sit')) {
+              metrics.sitUps = value;
+            } else if (label.includes('backs')) {
+              metrics.backs = value;
+            } else if (label.includes('head')) {
+              metrics.headUps = value;
+            } else if (label.includes('mile')) {
+              metrics.milesRun = value;
+            } else if (label.includes('drink') || label.includes('beer')) {
+              metrics.drinks = value;
+            }
+          }
+        
+          return metrics;
+        }
+
         /**
          * Update or create an entry in the fitness data array
          * @param {Array} fitnessData - Array of fitness entries
@@ -999,20 +1054,27 @@
             const formattedDate = formatDate(date);
             
             // Extract all metrics
+            const multiMetrics = extractMultipleMetrics(text);
+
             const extractedData = {
               formattedDate,
               wakeUpTime: extractWakeUpTime(text),
-              milesRun: extractNumericValue(text, PATTERNS.exercise.miles, parseFloat, 0, 100),
-              pressUps: extractNumericValue(text, PATTERNS.exercise.pushups, parseInt, 0, 1000),
-              sitUps: extractNumericValue(text, PATTERNS.exercise.situps, parseInt, 0, 1000),
-              backs: extractNumericValue(text, PATTERNS.exercise.backs, parseInt, 0, 1000),
-              headUps: extractNumericValue(text, PATTERNS.exercise.headUps, parseInt, 0, 1000),
-              drinks: extractNumericValue(text, PATTERNS.activities.drinks1, parseInt, 0, 50) || 
-                      extractNumericValue(text, PATTERNS.activities.drinks2, parseInt, 0, 50),
+              milesRun: multiMetrics.milesRun,
+              pressUps: multiMetrics.pressUps,
+              sitUps: multiMetrics.sitUps,
+              backs: multiMetrics.backs,
+              headUps: multiMetrics.headUps,
+              drinks: multiMetrics.drinks,
               flossed: extractBooleanValue(text, PATTERNS.health.flossYes, PATTERNS.health.flossNo),
               finasteride: extractBooleanValue(text, PATTERNS.health.finYes, PATTERNS.health.finNo),
               moodScore: extractNumericValue(text, PATTERNS.health.mood, parseInt, 1, 10)
             };
+            
+            // Handle guitarHours separately
+            extractedData.guitarHours = 
+              extractNumericValue(text, PATTERNS.activities.guitar1, parseFloat, 0, 24) || 
+              extractNumericValue(text, PATTERNS.activities.guitar2, parseFloat, 0, 24);
+
             
             // Handle guitar hours (try both patterns)
             extractedData.guitarHours = extractNumericValue(text, PATTERNS.activities.guitar1, parseFloat, 0, 24) || 
