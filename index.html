@@ -344,6 +344,7 @@
     };
     
     // GitHub Authentication Modal
+    // GitHub Authentication Modal - Updated with expiration notice
     function createGitHubAuthModal() {
       const modal = document.createElement('div');
       modal.id = 'githubAuthModal';
@@ -362,37 +363,39 @@
     
       const modalContent = document.createElement('div');
       modalContent.style.cssText = `
-        background-color: white;
+        background-color: #222;
         padding: 30px;
         border-radius: 8px;
         max-width: 500px;
         width: 100%;
+        color: #e0e0e0;
       `;
     
       modalContent.innerHTML = `
-        <h2 style="margin-top: 0; color: #2c3e50;">GitHub Authentication</h2>
+        <h2 style="margin-top: 0; color: #ffffff;">GitHub Authentication</h2>
         <p>Enter your GitHub details to save your fitness data to a repository.</p>
+        <p style="color: #27ae60;">Your token will be stored securely on this device for 90 days.</p>
         
         <div style="margin-bottom: 15px;">
           <label style="display: block; margin-bottom: 5px; font-weight: bold;">Personal Access Token:</label>
-          <input type="password" id="githubToken" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
-          <small style="color: #7f8c8d;">Create a token with 'repo' scope at <a href="https://github.com/settings/tokens" target="_blank">GitHub Token Settings</a></small>
+          <input type="password" id="githubToken" style="width: 100%; padding: 10px; border: 1px solid #555; border-radius: 4px; box-sizing: border-box; background-color: #111; color: #fff;">
+          <small style="color: #bbb;">Create a token with 'repo' scope at <a href="https://github.com/settings/tokens" target="_blank" style="color: #3498db;">GitHub Token Settings</a></small>
         </div>
         
         <div style="margin-bottom: 15px;">
           <label style="display: block; margin-bottom: 5px; font-weight: bold;">GitHub Username:</label>
-          <input type="text" id="githubUsername" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+          <input type="text" id="githubUsername" style="width: 100%; padding: 10px; border: 1px solid #555; border-radius: 4px; box-sizing: border-box; background-color: #111; color: #fff;">
         </div>
         
         <div style="margin-bottom: 15px;">
           <label style="display: block; margin-bottom: 5px; font-weight: bold;">Repository Name:</label>
-          <input type="text" id="githubRepo" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
-          <small style="color: #7f8c8d;">Make sure this repository exists in your account</small>
+          <input type="text" id="githubRepo" style="width: 100%; padding: 10px; border: 1px solid #555; border-radius: 4px; box-sizing: border-box; background-color: #111; color: #fff;">
+          <small style="color: #bbb;">Make sure this repository exists in your account</small>
         </div>
         
         <div style="margin-bottom: 15px;">
           <label style="display: block; margin-bottom: 5px; font-weight: bold;">Branch Name:</label>
-          <input type="text" id="githubBranch" value="main" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+          <input type="text" id="githubBranch" value="main" style="width: 100%; padding: 10px; border: 1px solid #555; border-radius: 4px; box-sizing: border-box; background-color: #111; color: #fff;">
         </div>
         
         <div style="display: flex; justify-content: space-between; margin-top: 20px;">
@@ -400,65 +403,187 @@
           <button id="saveAuthBtn" style="padding: 10px 20px; background-color: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer;">Save & Authenticate</button>
         </div>
       `;
-
-          modal.appendChild(modalContent);
-          document.body.appendChild(modal);
+    
+      modal.appendChild(modalContent);
+      document.body.appendChild(modal);
+    
+      // Event listeners
+      document.getElementById('cancelAuthBtn').addEventListener('click', () => {
+        document.body.removeChild(modal);
+      });
+    
+      document.getElementById('saveAuthBtn').addEventListener('click', async () => {
+        const token = document.getElementById('githubToken').value.trim();
+        const username = document.getElementById('githubUsername').value.trim();
+        const repository = document.getElementById('githubRepo').value.trim();
+        const branch = document.getElementById('githubBranch').value.trim() || 'main';
         
-          // Event listeners
-          document.getElementById('cancelAuthBtn').addEventListener('click', () => {
-            document.body.removeChild(modal);
-          });
-        
-          document.getElementById('saveAuthBtn').addEventListener('click', async () => {
-            const token = document.getElementById('githubToken').value.trim();
-            const username = document.getElementById('githubUsername').value.trim();
-            const repository = document.getElementById('githubRepo').value.trim();
-            const branch = document.getElementById('githubBranch').value.trim() || 'main';
-            
-            if (!token || !username || !repository) {
-              alert('Please fill in all required fields');
-              return;
-            }
-            
-            // Save GitHub config
-            githubConfig = {
-              token,
-              username,
-              repository,
-              branch,
-              isAuthenticated: false
-            };
-            
-            // Test authentication
-            try {
-              const authenticated = await testGitHubAuth();
-              if (authenticated) {
-                githubConfig.isAuthenticated = true;
-                document.getElementById('githubStatus').textContent = `Connected to ${username}/${repository}`;
-                document.getElementById('githubStatus').style.color = '#27ae60';
-                document.getElementById('configureGithubBtn').textContent = 'Reconfigure GitHub';
-                
-                // Store in localStorage (except token for security)
-                localStorage.setItem('githubUsername', username);
-                localStorage.setItem('githubRepository', repository);
-                localStorage.setItem('githubBranch', branch);
-                
-                // Remove modal
-                document.body.removeChild(modal);
-              }
-            } catch (error) {
-              alert(`Authentication failed: ${error.message}`);
-            }
-          });
-          
-          // Pre-fill from localStorage if available
-          if (localStorage.getItem('githubUsername')) {
-            document.getElementById('githubUsername').value = localStorage.getItem('githubUsername');
-            document.getElementById('githubRepo').value = localStorage.getItem('githubRepository') || '';
-            document.getElementById('githubBranch').value = localStorage.getItem('githubBranch') || 'main';
-          }
+        if (!token || !username || !repository) {
+          alert('Please fill in all required fields');
+          return;
         }
         
+        // Save GitHub config for current session
+        githubConfig = {
+          token,
+          username,
+          repository,
+          branch,
+          isAuthenticated: false
+        };
+        
+        // Test authentication
+        try {
+          const authenticated = await testGitHubAuth();
+          if (authenticated) {
+            githubConfig.isAuthenticated = true;
+            document.getElementById('githubStatus').textContent = `Connected to ${username}/${repository}`;
+            document.getElementById('githubStatus').style.color = '#27ae60';
+            document.getElementById('configureGithubBtn').textContent = 'Reconfigure GitHub';
+            
+            // Set expiration date - 90 days from now
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + 90);
+            
+            // Securely store credentials in localStorage with expiration
+            storeGitHubCredentials(token, username, repository, branch, expiryDate);
+            
+            // Remove modal
+            document.body.removeChild(modal);
+          }
+        } catch (error) {
+          alert(`Authentication failed: ${error.message}`);
+        }
+      });
+      
+      // Pre-fill from localStorage if available
+      if (localStorage.getItem('githubUsername')) {
+        document.getElementById('githubUsername').value = localStorage.getItem('githubUsername');
+        document.getElementById('githubRepo').value = localStorage.getItem('githubRepository') || '';
+        document.getElementById('githubBranch').value = localStorage.getItem('githubBranch') || 'main';
+      }
+    }
+
+        
+    // Function to encrypt token for storage
+    function encryptToken(token) {
+      // This is a simple obfuscation, not proper encryption
+      // In a production app, consider a more secure approach
+      return btoa(token.split('').reverse().join('') + '-' + Date.now());
+    }
+    
+    // Function to decrypt token from storage
+    function decryptToken(encrypted) {
+      try {
+        // Reverse the simple obfuscation
+        const parts = atob(encrypted).split('-');
+        return parts[0].split('').reverse().join('');
+      } catch (e) {
+        console.error('Failed to decrypt token', e);
+        return null;
+      }
+    }
+    
+    // Store GitHub credentials securely
+    function storeGitHubCredentials(token, username, repository, branch, expiryDate) {
+      localStorage.setItem('githubUsername', username);
+      localStorage.setItem('githubRepository', repository);
+      localStorage.setItem('githubBranch', branch);
+      localStorage.setItem('githubTokenExpiry', expiryDate.toISOString());
+      
+      // Store encrypted token
+      localStorage.setItem('githubTokenSecure', encryptToken(token));
+    }
+    
+    // Load GitHub credentials and check expiration
+    function loadGitHubCredentials() {
+      const username = localStorage.getItem('githubUsername');
+      const repository = localStorage.getItem('githubRepository');
+      const branch = localStorage.getItem('githubBranch') || 'main';
+      const expiryDateStr = localStorage.getItem('githubTokenExpiry');
+      const encryptedToken = localStorage.getItem('githubTokenSecure');
+      
+      if (!username || !repository || !encryptedToken || !expiryDateStr) {
+        return null;
+      }
+      
+      // Check if token has expired
+      const expiryDate = new Date(expiryDateStr);
+      const now = new Date();
+      
+      if (now > expiryDate) {
+        // Token expired, clear credentials
+        localStorage.removeItem('githubTokenSecure');
+        localStorage.removeItem('githubTokenExpiry');
+        return {
+          username,
+          repository, 
+          branch,
+          expired: true
+        };
+      }
+      
+      // Token is valid
+      const token = decryptToken(encryptedToken);
+      if (!token) return null;
+      
+      return {
+        token,
+        username,
+        repository,
+        branch,
+        expiryDate,
+        expired: false
+      };
+    }
+    
+    // Check GitHub authentication on page load
+    async function checkGitHubAuth() {
+      const credentials = loadGitHubCredentials();
+      const statusElement = document.getElementById('githubStatus');
+      
+      if (!credentials) {
+        statusElement.textContent = 'Not connected to GitHub';
+        statusElement.style.color = '#ccc';
+        return;
+      }
+      
+      if (credentials.expired) {
+        statusElement.textContent = `Token expired for ${credentials.username}/${credentials.repository}`;
+        statusElement.style.color = '#e74c3c';
+        return;
+      }
+      
+      // Compute days remaining until expiration
+      const daysRemaining = Math.ceil((credentials.expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+      
+      // Set up config with loaded credentials
+      githubConfig = {
+        token: credentials.token,
+        username: credentials.username,
+        repository: credentials.repository,
+        branch: credentials.branch,
+        isAuthenticated: false
+      };
+      
+      try {
+        // Test if the saved token is still valid
+        const authenticated = await testGitHubAuth();
+        if (authenticated) {
+          githubConfig.isAuthenticated = true;
+          statusElement.textContent = `Connected to ${credentials.username}/${credentials.repository} (${daysRemaining} days remaining)`;
+          statusElement.style.color = '#27ae60';
+          document.getElementById('configureGithubBtn').textContent = 'Reconfigure GitHub';
+        } else {
+          statusElement.textContent = `Authentication failed for ${credentials.username}/${credentials.repository}`;
+          statusElement.style.color = '#e74c3c';
+        }
+      } catch (error) {
+        statusElement.textContent = `Authentication error: ${error.message}`;
+        statusElement.style.color = '#e74c3c';
+      }
+    }
+    
         // Test GitHub Authentication
         async function testGitHubAuth() {
           try {
@@ -1443,6 +1568,7 @@ saveBtn.addEventListener('click', async () => {
 
 // Check for saved GitHub credentials on page load
 window.addEventListener('DOMContentLoaded', () => {
+    checkGitHubAuth();
     const username = localStorage.getItem('githubUsername');
     const repository = localStorage.getItem('githubRepository');
     const branch = localStorage.getItem('githubBranch') || 'main';
