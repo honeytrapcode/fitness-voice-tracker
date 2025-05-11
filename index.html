@@ -4,180 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracker</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        button {
-            padding: 12px 20px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #2980b9;
-        }
-        button:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-        }
-        button.stop {
-            background-color: #e74c3c;
-        }
-        button.stop:hover {
-            background-color: #c0392b;
-        }
-        button.save {
-            background-color: #2ecc71;
-        }
-        button.save:hover {
-            background-color: #27ae60;
-        }
-        .status {
-            padding: 15px;
-            background-color: #f1f1f1;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .transcript {
-            padding: 15px;
-            background-color: #ecf0f1;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            min-height: 100px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .record-indicator {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background-color: #e74c3c;
-            display: inline-block;
-            margin-right: 10px;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            overflow-x: auto;
-            display: block;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-            position: sticky;
-            top: 0;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .hidden {
-            display: none;
-        }
-        .instructions {
-            background-color: #e8f4fd;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .form-entry {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .form-group {
-            flex: 1;
-            min-width: 200px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        <style>
-    .github-controls {
-        margin-top: 20px;
+   <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
         padding: 20px;
-        background-color: #f8f9fa;
+        background-color: #0e0e0e;
+        color: #e0e0e0;
+      }
+    
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: #1a1a1a;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(255, 255, 255, 0.05);
+      }
+    
+      h1, h3 {
+        color: #ff4d4d;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+    
+      .controls, .github-actions, .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 30px;
+      }
+    
+      button {
+        padding: 12px 20px;
+        background-color: #ff4d4d;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+    
+      button:hover {
+        background-color: #cc0000;
+      }
+    
+      button:disabled {
+        background-color: #444;
+        cursor: not-allowed;
+      }
+    
+      button.save {
+        background-color: #999;
+        color: #000;
+      }
+    
+      button.save:hover {
+        background-color: #ccc;
+      }
+    
+      button.stop {
+        background-color: #d11a2a;
+      }
+    
+      .status, .transcript, .instructions, .form-entry, .github-controls {
+        background-color: #222;
+        padding: 15px;
         border-radius: 5px;
         margin-bottom: 20px;
-    }
-    .github-status {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-    }
-    #githubStatus {
-        color: #e74c3c;
-    }
-    .github-actions {
-        display: flex;
-        gap: 10px;
-    }
-    #configureGithubBtn {
-        background-color: #3498db;
-    }
-    #loadFromGithubBtn {
-        background-color: #9b59b6;
-    }
-    #createBackupBtn {
-        background-color: #f39c12;
-    }
-</style>
+        color: #ccc;
+      }
+    
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        color: #ddd;
+        overflow-x: auto;
+      }
+    
+      th, td {
+        border: 1px solid #444;
+        padding: 12px;
+        text-align: left;
+      }
+    
+      th {
+        background-color: #333;
+      }
+    
+      tr:nth-child(even) {
+        background-color: #1c1c1c;
+      }
+    
+      input, select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #555;
+        border-radius: 4px;
+        background-color: #111;
+        color: #fff;
+      }
+    
+      label {
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #bbb;
+      }
+    
+      .record-indicator {
+        background-color: #ff4d4d;
+        animation: pulse 1.5s infinite;
+      }
+    
+      @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+      }
     </style>
+
 </head>
 <body>
     <div class="container">
