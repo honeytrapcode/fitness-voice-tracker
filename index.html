@@ -92,7 +92,7 @@
     
     /* Download CSV - slightly dark blue */
     #downloadBtn {
-      background-color: #2c5282; /* slightly dark blue */
+      background-color: #b83280; /* slightly dark blue */
     }
     
     /* Configure GitHub - slightly dark pink */
@@ -105,7 +105,7 @@
     }
     /* Create GitHub Backup - slightly dark pink */
      #createBackupBtn {
-      background-color: #b83280; /* slightly dark pink */
+      background-color: #2e8b57; /* slightly dark green */
     }
     
       .status, .transcript, .instructions, .github-controls {
@@ -167,7 +167,7 @@
       label {
         margin-bottom: 5px;
         font-weight: bold;
-        color: #bbb;
+        color: #8a0416;
       }
     
       .record-indicator {
@@ -1569,6 +1569,7 @@ saveBtn.addEventListener('click', async () => {
 // Check for saved GitHub credentials on page load
 window.addEventListener('DOMContentLoaded', () => {
     checkGitHubAuth();
+    loadGitHubCredentials();
     const username = localStorage.getItem('githubUsername');
     const repository = localStorage.getItem('githubRepository');
     const branch = localStorage.getItem('githubBranch') || 'main';
