@@ -787,12 +787,9 @@
           },
         
           activities: {
-            // More guitar phrasing, including “jammed”, “played guitar for”, etc.
-            guitar1: /(?:played|practice[d]?|jammed)\s+(?:the\s+)?guitar\s+(?:for\s+)?(\d+\.?\d*)\s*(?:hours?|hrs?)/i,
-            guitar2: /(\d+\.?\d*)\s*(?:hours?|hrs?)\s+(?:of\s+)?(?:guitar|practice|playing)/i,
-        
-            // Support casual phrasing: “3 drinks”, “drank 3 beers”, “had 2 glasses”
-            drinks1: /(?:had\s+)?(\d+)\s*(?:drinks?|beers?|glasses?|shots?)/i,
+            guitar1: /(?:played|practice[d]?)\s+guitar\s+(?:for\s+)?(\d+\.?\d*)\s*(?:hours?|hrs?)/i,
+            guitar2: /(\d+\.?\d*)\s*(?:hours?|hrs?)\s+(?:of\s+)?guitar/i,
+            drinks1: /(\d+)\s*drinks?/i,
             drinks2: /(?:had|drank|consumed)\s+(\d+)\s*(?:drinks?|beers?|glasses?|shots?)/i
           },
         
