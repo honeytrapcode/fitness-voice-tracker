@@ -137,7 +137,7 @@
         width: 100%;
         border-collapse: collapse;
         margin-top: 20px;
-        color: #ddd;
+        color: #8a0416;
         overflow-x: auto;
       }
     
@@ -167,7 +167,7 @@
       label {
         margin-bottom: 5px;
         font-weight: bold;
-        color: #8a0416;
+        color: #bbb;
       }
     
       .record-indicator {
@@ -1569,7 +1569,6 @@ saveBtn.addEventListener('click', async () => {
 // Check for saved GitHub credentials on page load
 window.addEventListener('DOMContentLoaded', () => {
     checkGitHubAuth();
-    loadGitHubCredentials();
     const username = localStorage.getItem('githubUsername');
     const repository = localStorage.getItem('githubRepository');
     const branch = localStorage.getItem('githubBranch') || 'main';
@@ -1583,6 +1582,7 @@ window.addEventListener('DOMContentLoaded', () => {
             `Credentials saved for ${username}/${repository} (not connected)`;
         document.getElementById('githubStatus').style.color = '#f39c12';
     }
+    loadGitHubCredentials();
 });
     </script>
 </body>
