@@ -732,225 +732,298 @@
             startBtn.disabled = true;
         }
 
-        // Process the transcript to extract fitness data
-       // Process the transcript to extract fitness data
-function processTranscript() {
-    const text = transcript.textContent.trim();
-    if (!text) return;
-    
-    status.textContent = 'Processing speech...';
-    
-    // Here we would ideally use a more sophisticated NLP model
-    // This is a simple rule-based extraction as a proof of concept
-    
-    // Extract date (default to today if not specified)
-    let date = new Date();
-    const todayRegex = /today/i;
-    const yesterdayRegex = /yesterday/i;
-    const dateRegex = /on\s+(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/i;
-    
-    if (yesterdayRegex.test(text)) {
-        date.setDate(date.getDate() - 1);
-    } else {
-        // Try to extract a specific date like "on 05/11" or "on 05/11/2025"
-        const dateMatch = text.match(dateRegex);
-        if (dateMatch) {
-            const day = parseInt(dateMatch[1]);
-            const month = parseInt(dateMatch[2]) - 1; // JS months are 0-indexed
-            let year = dateMatch[3] ? parseInt(dateMatch[3]) : date.getFullYear();
-            
-            // Handle 2-digit years
-            if (year < 100) {
-                year += 2000;
-            }
-            
-            // Create new date object
-            const specifiedDate = new Date(year, month, day);
-            if (!isNaN(specifiedDate.getTime())) {
-                date = specifiedDate;
-            }
-        }
-    }
-    
-    // Format date as DD/MM/YYYY
-    const formattedDate = formatDate(date);
-    
-    // Extract wake-up time
-    let wakeUpTime = null;
-    const wakeTimeRegex = /woke\s+(?:up\s+)?(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)?/i;
-    const wakeTimeMatch = text.match(wakeTimeRegex);
-    if (wakeTimeMatch) {
-        let hour = parseInt(wakeTimeMatch[1]);
-        const minute = wakeTimeMatch[2] ? parseInt(wakeTimeMatch[2]) : 0;
-        const period = wakeTimeMatch[3] ? wakeTimeMatch[3].toLowerCase() : null;
+        /**
+         * Daily Activity Tracker - Natural Language Processing Functions
+         * Processes speech transcripts to extract health and fitness metrics
+         */
         
-        // Convert to 24-hour format
-        if (period === 'pm' && hour < 12) {
-            hour += 12;
-        } else if (period === 'am' && hour === 12) {
-            hour = 0;
-        }
-        
-        wakeUpTime = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-    }
-    
-    // Extract miles run
-    let milesRun = null;
-    const milesRegex = /(?:ran|run|running|jogged)\s+(\d+\.?\d*)\s*miles?/i;
-    const milesMatch = text.match(milesRegex);
-    if (milesMatch) {
-        milesRun = parseFloat(milesMatch[1]);
-    }
-    
-    // Extract push-ups
-    let pressUps = null;
-    const pushupRegex = /(\d+)\s*(push\s*ups?|press\s*ups?)/i;
-    const pushupMatch = text.match(pushupRegex);
-    if (pushupMatch) {
-        pressUps = parseInt(pushupMatch[1]);
-    }
-    
-    // Extract sit-ups
-    let sitUps = null;
-    const situpRegex = /(\d+)\s*sit\s*ups?/i;
-    const situpMatch = text.match(situpRegex);
-    if (situpMatch) {
-        sitUps = parseInt(situpMatch[1]);
-    }
-    
-    // Extract backs
-    let backs = null;
-    const backsRegex = /(\d+)\s*backs?/i;
-    const backsMatch = text.match(backsRegex);
-    if (backsMatch) {
-        backs = parseInt(backsMatch[1]);
-    }
-    
-    // Extract head-ups
-    let headUps = null;
-    const headUpsRegex = /(\d+)\s*head\s*ups?/i;
-    const headUpsMatch = text.match(headUpsRegex);
-    if (headUpsMatch) {
-        headUps = parseInt(headUpsMatch[1]);
-    }
-    
-    // Extract guitar hours
-    let guitarHours = null;
-    const guitarRegex = /(?:played|practice[d]?)\s+guitar\s+(?:for\s+)?(\d+\.?\d*)\s*(?:hours?|hrs?)/i;
-    const guitarHoursRegex = /(\d+\.?\d*)\s*(?:hours?|hrs?)\s+(?:of\s+)?guitar/i;
-    
-    const guitarMatch = text.match(guitarRegex);
-    const guitarHoursMatch = text.match(guitarHoursRegex);
-    
-    if (guitarMatch) {
-        guitarHours = parseFloat(guitarMatch[1]);
-    } else if (guitarHoursMatch) {
-        guitarHours = parseFloat(guitarHoursMatch[1]);
-    }
-    
-    // Extract drinks
-    let drinks = null;
-    const drinksRegex = /(\d+)\s*drinks?/i;
-    const alcoholRegex = /(?:had|drank|consumed)\s+(\d+)\s*(?:drinks?|beers?|glasses?|shots?)/i;
-    
-    const drinksMatch = text.match(drinksRegex);
-    const alcoholMatch = text.match(alcoholRegex);
-    
-    if (drinksMatch) {
-        drinks = parseInt(drinksMatch[1]);
-    } else if (alcoholMatch) {
-        drinks = parseInt(alcoholMatch[1]);
-    }
-    
-    // Extract flossed
-    let flossed = null;
-    const flossYesRegex = /(?:flossed|did floss|i flossed)/i;
-    const flossNoRegex = /(?:didn't floss|did not floss|no floss)/i;
-    
-    if (flossYesRegex.test(text) && !flossNoRegex.test(text)) {
-        flossed = 'Yes';
-    } else if (flossNoRegex.test(text)) {
-        flossed = 'No';
-    }
-    
-    // Extract finasteride
-    let finasteride = null;
-    const finYesRegex = /(?:took|had|used)\s+(?:my\s+)?finasteride/i;
-    const finNoRegex = /(?:didn't take|did not take|no finasteride|forgot finasteride)/i;
-    
-    if (finYesRegex.test(text) && !finNoRegex.test(text)) {
-        finasteride = 'Yes';
-    } else if (finNoRegex.test(text)) {
-        finasteride = 'No';
-    }
-
-    // Extract mood score
-    let moodScore = null;
-    const moodRegex = /mood(?:\s+(?:is|was|:))?\s+(\d+)/i;
-    const moodMatch = text.match(moodRegex);
-    if (moodMatch) {
-        moodScore = parseInt(moodMatch[1]);
-    }
-    
-    // Build status message with extracted data
-    let extractedInfo = `For ${formattedDate}:\n`;
-    if (wakeUpTime !== null) extractedInfo += `Wake up: ${wakeUpTime}, `;
-    if (milesRun !== null) extractedInfo += `${milesRun} miles run, `;
-    if (pressUps !== null) extractedInfo += `${pressUps} pushups, `;
-    if (sitUps !== null) extractedInfo += `${sitUps} situps, `;
-    if (backs !== null) extractedInfo += `${backs} backs, `;
-    if (headUps !== null) extractedInfo += `${headUps} head-ups, `;
-    if (guitarHours !== null) extractedInfo += `${guitarHours} hrs guitar, `;
-    if (drinks !== null) extractedInfo += `${drinks} drinks, `;
-    if (flossed !== null) extractedInfo += `flossed: ${flossed}, `;
-    if (finasteride !== null) extractedInfo += `finasteride: ${finasteride}, `;
-    if (moodScore !== null) extractedInfo += `moodScore: ${moodScore}, `;
-    
-    // Remove trailing comma and space
-    extractedInfo = extractedInfo.replace(/, $/, '');
-    
-    // Update the status
-    status.textContent = extractedInfo;
-    
-    // Look for existing entry for this date
-    const existingIndex = fitnessData.findIndex(entry => entry.date === formattedDate);
-    
-    if (existingIndex >= 0) {
-        // Update existing entry with non-null values
-        if (wakeUpTime !== null) fitnessData[existingIndex].wakeUpTime = wakeUpTime;
-        if (milesRun !== null) fitnessData[existingIndex].milesRun = milesRun;
-        if (pressUps !== null) fitnessData[existingIndex].pressUps = pressUps;
-        if (sitUps !== null) fitnessData[existingIndex].sitUps = sitUps;
-        if (backs !== null) fitnessData[existingIndex].backs = backs;
-        if (headUps !== null) fitnessData[existingIndex].headUps = headUps;
-        if (guitarHours !== null) fitnessData[existingIndex].guitarHours = guitarHours;
-        if (drinks !== null) fitnessData[existingIndex].drinks = drinks;
-        if (flossed !== null) fitnessData[existingIndex].flossed = flossed;
-        if (finasteride !== null) fitnessData[existingIndex].finasteride = finasteride;
-        if (moodScore !== null) fitnessData[existingIndex].moodScore = moodScore;
-    } else {
-        // Create new entry with default values and update with extracted values
-        const newEntry = {
-            date: formattedDate,
-            wakeUpTime: wakeUpTime || '08:00',
-            milesRun: milesRun || 0,
-            pressUps: pressUps || 0,
-            sitUps: sitUps || 0,
-            backs: backs || 0,
-            headUps: headUps || 0,
-            guitarHours: guitarHours || 0,
-            drinks: drinks || 0,
-            flossed: flossed || 'No',
-            finasteride: finasteride || 'No',
-            moodScore: moodScore || ''
+        // Store all regex patterns in one place for easier maintenance
+        const PATTERNS = {
+          date: {
+            today: /today/i,
+            yesterday: /yesterday/i,
+            specificDate: /on\s+(\d{1,2})[\/\-\.](\d{1,2})(?:[\/\-\.](\d{2,4}))?/i
+          },
+          time: {
+            wakeUp: /woke\s+(?:up\s+)?(?:at\s+)?(\d{1,2}):?(\d{2})?\s*(am|pm)?/i
+          },
+          exercise: {
+            miles: /(?:ran|run|running|jogged)\s+(\d+\.?\d*)\s*miles?/i,
+            pushups: /(\d+)\s*(?:push\s*ups?|press\s*ups?)/i,
+            situps: /(\d+)\s*sit\s*ups?/i,
+            backs: /(\d+)\s*backs?/i,
+            headUps: /(\d+)\s*head\s*ups?/i
+          },
+          activities: {
+            guitar1: /(?:played|practice[d]?)\s+guitar\s+(?:for\s+)?(\d+\.?\d*)\s*(?:hours?|hrs?)/i,
+            guitar2: /(\d+\.?\d*)\s*(?:hours?|hrs?)\s+(?:of\s+)?guitar/i,
+            drinks1: /(\d+)\s*drinks?/i,
+            drinks2: /(?:had|drank|consumed)\s+(\d+)\s*(?:drinks?|beers?|glasses?|shots?)/i
+          },
+          health: {
+            flossYes: /(?:flossed|did floss|i flossed)/i,
+            flossNo: /(?:didn't floss|did not floss|no floss)/i,
+            finYes: /(?:took|had|used)\s+(?:my\s+)?finasteride/i,
+            finNo: /(?:didn't take|did not take|no finasteride|forgot finasteride)/i,
+            mood: /mood(?:\s+(?:is|was|:))?\s+(\d+)/i
+          }
         };
         
-        fitnessData.push(newEntry);
-    }
-    
-    // Update table
-    renderTable();
-}
+        /**
+         * Format a Date object to DD/MM/YYYY
+         * @param {Date} date - The date to format
+         * @return {string} Formatted date string
+         */
+        function formatDate(date) {
+          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+        }
+        
+        /**
+         * Extract date from transcript text
+         * @param {string} text - The transcript text
+         * @return {Date} Extracted date or today's date if not found
+         */
+        function extractDate(text) {
+          let date = new Date();
+          
+          if (PATTERNS.date.yesterday.test(text)) {
+            date.setDate(date.getDate() - 1);
+          } else {
+            const dateMatch = text.match(PATTERNS.date.specificDate);
+            if (dateMatch) {
+              const day = parseInt(dateMatch[1], 10);
+              const month = parseInt(dateMatch[2], 10) - 1; // JS months are 0-indexed
+              let year = dateMatch[3] ? parseInt(dateMatch[3], 10) : date.getFullYear();
+              
+              // Handle 2-digit years
+              if (year < 100) {
+                year += 2000;
+              }
+              
+              // Create new date object with validation
+              const specifiedDate = new Date(year, month, day);
+              if (!isNaN(specifiedDate.getTime())) {
+                date = specifiedDate;
+              }
+            }
+          }
+          
+          return date;
+        }
+        
+        /**
+         * Extract wake-up time from transcript text
+         * @param {string} text - The transcript text
+         * @return {string|null} Formatted wake-up time or null if not found
+         */
+        function extractWakeUpTime(text) {
+          const wakeTimeMatch = text.match(PATTERNS.time.wakeUp);
+          if (!wakeTimeMatch) return null;
+          
+          let hour = parseInt(wakeTimeMatch[1], 10);
+          const minute = wakeTimeMatch[2] ? parseInt(wakeTimeMatch[2], 10) : 0;
+          const period = wakeTimeMatch[3] ? wakeTimeMatch[3].toLowerCase() : null;
+          
+          // Convert to 24-hour format
+          if (period === 'pm' && hour < 12) {
+            hour += 12;
+          } else if (period === 'am' && hour === 12) {
+            hour = 0;
+          }
+          
+          // Validate hour and minute
+          if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+            console.warn('Invalid time extracted:', wakeTimeMatch[0]);
+            return null;
+          }
+          
+          return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        }
+        
+        /**
+         * Extract a numeric value using a regex pattern
+         * @param {string} text - The transcript text
+         * @param {RegExp} pattern - Regular expression with a capturing group for the number
+         * @param {Function} parseFunc - Function to parse the string (parseInt or parseFloat)
+         * @param {number} min - Minimum valid value
+         * @param {number} max - Maximum valid value
+         * @return {number|null} Extracted value or null if not found/invalid
+         */
+        function extractNumericValue(text, pattern, parseFunc, min = 0, max = Infinity) {
+          const match = text.match(pattern);
+          if (!match) return null;
+          
+          const value = parseFunc(match[1]);
+          if (isNaN(value) || value < min || value > max) {
+            console.warn('Invalid value extracted:', match[0]);
+            return null;
+          }
+          
+          return value;
+        }
+        
+        /**
+         * Extract a boolean value based on presence of yes/no patterns
+         * @param {string} text - The transcript text
+         * @param {RegExp} yesPattern - Pattern indicating "yes"
+         * @param {RegExp} noPattern - Pattern indicating "no"
+         * @return {string|null} "Yes", "No", or null if not determined
+         */
+        function extractBooleanValue(text, yesPattern, noPattern) {
+          if (yesPattern.test(text) && !noPattern.test(text)) {
+            return 'Yes';
+          } else if (noPattern.test(text)) {
+            return 'No';
+          }
+          return null;
+        }
+        
+        /**
+         * Update or create an entry in the fitness data array
+         * @param {Array} fitnessData - Array of fitness entries
+         * @param {Object} extractedData - Object containing extracted values
+         * @return {Object} The updated or created entry
+         */
+        function updateFitnessData(fitnessData, extractedData) {
+          const { formattedDate, ...metrics } = extractedData;
+          
+          // Look for existing entry for this date
+          const existingIndex = fitnessData.findIndex(entry => entry.date === formattedDate);
+          
+          if (existingIndex >= 0) {
+            // Update existing entry with non-null values
+            Object.entries(metrics).forEach(([key, value]) => {
+              if (value !== null) {
+                fitnessData[existingIndex][key] = value;
+              }
+            });
+            
+            return fitnessData[existingIndex];
+          } else {
+            // Create new entry with default values
+            const defaults = {
+              wakeUpTime: '08:00',
+              milesRun: 0,
+              pressUps: 0,
+              sitUps: 0,
+              backs: 0,
+              headUps: 0,
+              guitarHours: 0,
+              drinks: 0,
+              flossed: 'No',
+              finasteride: 'No',
+              moodScore: ''
+            };
+            
+            // Merge defaults with extracted values
+            const newEntry = {
+              date: formattedDate,
+              ...defaults,
+              ...Object.fromEntries(Object.entries(metrics).filter(([_, v]) => v !== null))
+            };
+            
+            fitnessData.push(newEntry);
+            return newEntry;
+          }
+        }
+        
+        /**
+         * Generate a summary of extracted information
+         * @param {Object} extractedData - Object containing extracted values
+         * @return {string} Human-readable summary
+         */
+        
+        function generateSummary(extractedData) {
+          const { formattedDate, ...metrics } = extractedData;
+          
+          let summary = `For ${formattedDate}:\n`;
+          const parts = [];
+          
+          if (metrics.wakeUpTime) parts.push(`Wake up: ${metrics.wakeUpTime}`);
+          if (metrics.milesRun) parts.push(`${metrics.milesRun} miles run`);
+          if (metrics.pressUps) parts.push(`${metrics.pressUps} pushups`);
+          if (metrics.sitUps) parts.push(`${metrics.sitUps} situps`);
+          if (metrics.backs) parts.push(`${metrics.backs} backs`);
+          if (metrics.headUps) parts.push(`${metrics.headUps} head-ups`);
+          if (metrics.guitarHours) parts.push(`${metrics.guitarHours} hrs guitar`);
+          if (metrics.drinks) parts.push(`${metrics.drinks} drinks`);
+          if (metrics.flossed) parts.push(`flossed: ${metrics.flossed}`);
+          if (metrics.finasteride) parts.push(`finasteride: ${metrics.finasteride}`);
+          if (metrics.moodScore) parts.push(`moodScore: ${metrics.moodScore}`);
+          
+          return summary + parts.join(', ');
+        }
+        /**
+         * Main function to process a transcript and extract activity data
+         * @param {string} text - The transcript text
+         * @param {Array} fitnessData - Array of fitness data entries
+         * @param {HTMLElement} statusElement - Element to update with status
+         * @return {Object} Object containing extracted and processed data
+         */
+       // Process the transcript to extract fitness data
+        function processTranscript(text, fitnessData, statusElement) {
+          try {
+            if (!text || typeof text !== 'string') {
+              throw new Error('No valid text provided');
+            }
+            
+            if (statusElement) {
+              statusElement.textContent = 'Processing speech...';
+            }
+            
+            // Extract date and format it
+            const date = extractDate(text);
+            const formattedDate = formatDate(date);
+            
+            // Extract all metrics
+            const extractedData = {
+              formattedDate,
+              wakeUpTime: extractWakeUpTime(text),
+              milesRun: extractNumericValue(text, PATTERNS.exercise.miles, parseFloat, 0, 100),
+              pressUps: extractNumericValue(text, PATTERNS.exercise.pushups, parseInt, 0, 1000),
+              sitUps: extractNumericValue(text, PATTERNS.exercise.situps, parseInt, 0, 1000),
+              backs: extractNumericValue(text, PATTERNS.exercise.backs, parseInt, 0, 1000),
+              headUps: extractNumericValue(text, PATTERNS.exercise.headUps, parseInt, 0, 1000),
+              drinks: extractNumericValue(text, PATTERNS.activities.drinks1, parseInt, 0, 50) || 
+                      extractNumericValue(text, PATTERNS.activities.drinks2, parseInt, 0, 50),
+              flossed: extractBooleanValue(text, PATTERNS.health.flossYes, PATTERNS.health.flossNo),
+              finasteride: extractBooleanValue(text, PATTERNS.health.finYes, PATTERNS.health.finNo),
+              moodScore: extractNumericValue(text, PATTERNS.health.mood, parseInt, 1, 10)
+            };
+            
+            // Handle guitar hours (try both patterns)
+            extractedData.guitarHours = extractNumericValue(text, PATTERNS.activities.guitar1, parseFloat, 0, 24) || 
+                                        extractNumericValue(text, PATTERNS.activities.guitar2, parseFloat, 0, 24);
+            
+            // Update fitness data storage
+            const updatedEntry = updateFitnessData(fitnessData, extractedData);
+            
+            // Generate summary for display
+            const summary = generateSummary(extractedData);
+            
+            if (statusElement) {
+              statusElement.textContent = summary;
+            }
+            
+            return {
+              success: true,
+              extractedData,
+              updatedEntry,
+              summary
+            };
+          } catch (error) {
+            console.error('Error processing transcript:', error);
+            
+            if (statusElement) {
+              statusElement.textContent = 'Error processing transcript: ' + error.message;
+            }
+            
+            return {
+              success: false,
+              error: error.message
+            };
+          }
+        }
         // Render table with current data
         function renderTable() {
             tableBody.innerHTML = '';
