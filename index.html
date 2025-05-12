@@ -1432,14 +1432,6 @@
             }
         });
 
-        saveBtn.addEventListener('click', () => {
-            // In a real application, this would save to a GitHub repository
-            alert('In a full implementation, this would commit changes to your GitHub repository.');
-            
-            // For the demo, we'll just update the local data
-            status.textContent = 'Changes saved locally (demo mode)';
-        });
-
         downloadBtn.addEventListener('click', () => {
             const csv = convertToCSV();
             const blob = new Blob([csv], { type: 'text/csv' });
