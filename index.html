@@ -1603,6 +1603,8 @@ saveBtn.addEventListener('click', async () => {
                 const success = await loadFitnessDataFromGitHub();
                 if (success) {
                     status.textContent = 'Data automatically loaded from GitHub successfully';
+                    document.getElementById('githubStatus').textContent = 
+                    `Credentials saved for ${username}/${repository} (connected)`;
                 } else {
                     status.textContent = 'No data found on GitHub or failed to load';
                 }
