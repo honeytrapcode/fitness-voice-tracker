@@ -753,11 +753,11 @@
             return `${year}-${month}-${day}`; // ISO format
         }
 
-        function formatDateForDisplay(isoDateStr) {
-            const d = new Date(isoDateStr);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
+        function formatDateForDisplay(isoDate) {
+            const date = new Date(isoDate);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
             return `${day}/${month}/${year}`;
         }
 
@@ -771,7 +771,7 @@
         // Initialize data array from sample data
         let fitnessData = [
             {
-                date: '27/12/2024',
+                date: '2024-12-27',
                 wakeUpTime: '10:30',
                 milesRun: 2.0,
                 pressUps: 100,
@@ -785,7 +785,7 @@
                 moodScore: '7'
             },
             {
-                date: '28/12/2024',
+                date: '2024-12-28',
                 wakeUpTime: '12:00',
                 milesRun: 5.6,
                 pressUps: 100,
@@ -799,7 +799,7 @@
                 moodScore: '7'
             },
             {
-                date: '29/12/2024',
+                date: '2024-12-29',
                 wakeUpTime: '11:00',
                 milesRun: 0.5,
                 pressUps: 50,
@@ -962,41 +962,37 @@
          * @param {Date} date - The date to format
          * @return {string} Formatted date string
          */
-        function formatDate(date) {
-          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
-        }
+         function formatDate(isoDate) {
+            const date = new Date(isoDate);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${year}-${month}-${day}`; // ISO format
+        }         
         
         /**
          * Extract date from transcript text
          * @param {string} text - The transcript text
          * @return {Date} Extracted date or today's date if not found
          */
-        function extractDate(text) {
-          let date = new Date();
-          
-          if (PATTERNS.date.yesterday.test(text)) {
-            date.setDate(date.getDate() - 1);
-          } else {
-            const dateMatch = text.match(PATTERNS.date.specificDate);
-            if (dateMatch) {
-              const day = parseInt(dateMatch[1], 10);
-              const month = parseInt(dateMatch[2], 10) - 1; // JS months are 0-indexed
-              let year = dateMatch[3] ? parseInt(dateMatch[3], 10) : date.getFullYear();
-              
-              // Handle 2-digit years
-              if (year < 100) {
-                year += 2000;
-              }
-              
-              // Create new date object with validation
-              const specifiedDate = new Date(year, month, day);
-              if (!isNaN(specifiedDate.getTime())) {
-                date = specifiedDate;
-              }
+          function extractDate(text) {
+            let date = new Date();
+        
+            if (PATTERNS.date.yesterday.test(text)) {
+                date.setDate(date.getDate() - 1);
+            } else {
+                const dateMatch = text.match(PATTERNS.date.specificDate);
+                if (dateMatch) {
+                    const day = parseInt(dateMatch[1], 10);
+                    const month = parseInt(dateMatch[2], 10) - 1; // 0-indexed
+                    let year = dateMatch[3] ? parseInt(dateMatch[3], 10) : date.getFullYear();
+                    if (year < 100) year += 2000;
+                    const specifiedDate = new Date(year, month, day);
+                    if (!isNaN(specifiedDate.getTime())) date = specifiedDate;
+                }
             }
-          }
-          
-          return date;
+        
+            return date.toISOString().split('T')[0]; // ISO format
         }
         
         /**
