@@ -515,25 +515,40 @@
     
     // Load GitHub credentials and check expiration
     function loadGitHubCredentials() {
-      const credentials = {
+      // Existing credential loading logic
       const username = localStorage.getItem('githubUsername');
       const repository = localStorage.getItem('githubRepository');
       const branch = localStorage.getItem('githubBranch') || 'main';
       const expiryDateStr = localStorage.getItem('githubTokenExpiry');
       const encryptedToken = localStorage.getItem('githubTokenSecure');
       
+      // Add comprehensive logging
+      console.log('GitHub Credential Loading Debug:', {
+        // Log each piece of retrieved data
+        username: username ? 'Present' : 'Missing',
+        repository: repository ? 'Present' : 'Missing',
+        branch: branch,
+        tokenExpiry: expiryDateStr ? new Date(expiryDateStr).toLocaleString() : 'Missing',
+        encryptedTokenPresent: !!encryptedToken,
+        
+        // Additional validation checks
+        expiryStatus: expiryDateStr 
+          ? (new Date(expiryDateStr) > new Date() ? 'Valid' : 'Expired') 
+          : 'No expiry set'
+      });
+    
+      // Rest of your existing validation logic...
       if (!username || !repository || !encryptedToken || !expiryDateStr) {
+        console.warn('Incomplete GitHub credentials');
         return null;
       }
       
-      // Check if token has expired
+      // Check token expiration
       const expiryDate = new Date(expiryDateStr);
       const now = new Date();
       
       if (now > expiryDate) {
-        // Token expired, clear credentials
-        localStorage.removeItem('githubTokenSecure');
-        localStorage.removeItem('githubTokenExpiry');
+        console.warn('GitHub credentials have expired');
         return {
           username,
           repository, 
@@ -541,20 +556,20 @@
           expired: true
         };
       }
-    }
-    console.log('Loaded credentials:', {
-    username: credentials?.username,
-    repository: credentials?.repository,
-    tokenProvided: !!credentials?.token,
-    expired: credentials?.expired
-  });
-  
-  return credentials;
       
-      // Token is valid
+      // Decrypt token
       const token = decryptToken(encryptedToken);
-      if (!token) return null;
       
+      // Log token decryption result
+      console.log('Token Decryption:', {
+        tokenDecrypted: token ? 'Success' : 'Failed'
+      });
+    
+      if (!token) {
+        console.error('Failed to decrypt GitHub token');
+        return null;
+      }
+    
       return {
         token,
         username,
