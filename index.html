@@ -1283,15 +1283,23 @@
         function renderTable() {
             tableBody.innerHTML = '';
             
-            // Sort data by date (newest first)
-            fitnessData.sort((a, b) => {
-                const dateA = a.date.split('/').reverse().join('');
-                const dateB = b.date.split('/').reverse().join('');
-                return dateB.localeCompare(dateA);
-            });
+                        // Normalize the date field
+                fitnessData.forEach((item) => {
+                    if (typeof item.date === 'string') {
+                        // Parse the date if it's in string format
+                        item.date = parseDateFromDDMMYYYY(item.date);
+                    } else if (!(item.date instanceof Date)) {
+                        console.error('Invalid date format found:', item.date);
+                    }
+                });
             
-            fitnessData.forEach((entry, index) => {
-                const row = document.createElement('tr');
+                // Sort the data by date
+                fitnessData.sort((a, b) => {
+                    const dateA = a.date instanceof Date ? a.date : parseDateFromDDMMYYYY(a.date);
+                    const dateB = b.date instanceof Date ? b.date : parseDateFromDDMMYYYY(b.date);
+                    return dateA - dateB;
+                });
+
                 
                 row.innerHTML = `
                     <td>${formatDateForDisplay(entry.date)}</td>
