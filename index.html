@@ -1605,6 +1605,7 @@ saveBtn.addEventListener('click', async () => {
                     status.textContent = 'Data automatically loaded from GitHub successfully';
                     document.getElementById('githubStatus').textContent = 
                     `Credentials saved for ${username}/${repository} (connected)`;
+                    document.getElementById('githubStatus').style.color = '#2e8b57';
                 } else {
                     status.textContent = 'No data found on GitHub or failed to load';
                 }
