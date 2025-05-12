@@ -755,8 +755,40 @@
 
         function formatDateForDisplay(isoDate) {
             const date = new Date(isoDate);
+            if (isNaN(date.getTime())) {
+                return "Invalid Date";
+            }
+            return formatDateToDDMMYYYY(date);
+        }
+    /**
+         * Parse a date in `dd/mm/yyyy` format and return a valid Date object.
+         * @param {string} dateStr - The date string in `dd/mm/yyyy` format.
+         * @returns {Date} - A valid Date object or `Invalid Date` if the input is incorrect.
+         */
+        function parseDateFromDDMMYYYY(dateStr) {
+            const [day, month, year] = dateStr.split('/').map((part) => parseInt(part, 10));
+            // Months are 0-indexed in JavaScript Date constructor
+            const parsedDate = new Date(year, month - 1, day);
+        
+            // Ensure the parsed date matches the input (e.g., rejects invalid dates like "32/13/2025")
+            if (
+                parsedDate.getDate() === day &&
+                parsedDate.getMonth() === month - 1 &&
+                parsedDate.getFullYear() === year
+            ) {
+                return parsedDate;
+            } else {
+                return new Date('Invalid Date'); // Return invalid date if parsing fails
+            }
+        }
+        /**
+         * Format a Date object as `dd/mm/yyyy`.
+         * @param {Date} date - A valid Date object.
+         * @returns {string} - The formatted date string.
+         */
+        function formatDateToDDMMYYYY(date) {
             const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
             const year = date.getFullYear();
             return `${day}/${month}/${year}`;
         }
@@ -1378,7 +1410,7 @@
                 
                 const values = lines[i].split(',');
                 const entry = {
-                    date: values[0] || '',
+                    date: parseDateFromDDMMYYYY(values[0] || ''),
                     wakeUpTime: values[1] || '',
                     milesRun: parseFloat(values[2]) || 0,
                     pressUps: parseInt(values[3]) || 0,
