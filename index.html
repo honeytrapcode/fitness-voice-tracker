@@ -753,6 +753,14 @@
             return `${year}-${month}-${day}`; // ISO format
         }
 
+        function formatDateForDisplay(isoDateStr) {
+            const d = new Date(isoDateStr);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
 
         // Helper function to parse date from DD/MM/YYYY format
        function parseDate(dateStr) {
@@ -1258,7 +1266,7 @@
                 const row = document.createElement('tr');
                 
                 row.innerHTML = `
-                    <td>${entry.date}</td>
+                    <td>${formatDateForDisplay(entry.date)}</td>
                     <td>${entry.wakeUpTime}</td>
                     <td>${entry.milesRun}</td>
                     <td>${entry.pressUps}</td>
