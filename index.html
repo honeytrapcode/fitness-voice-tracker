@@ -1582,19 +1582,6 @@ window.addEventListener('DOMContentLoaded', () => {
             `Credentials saved for ${username}/${repository} (not connected)`;
         document.getElementById('githubStatus').style.color = '#f39c12';
     }
-    
-    const status = document.getElementById('status');
-    status.textContent = 'Loading data from GitHub...';
-    
-    try {
-        const success = await loadFitnessDataFromGitHub();
-        if (success) {
-            status.textContent = 'Data loaded from GitHub successfully';
-        }
-    } catch (error) {
-        status.textContent = `Error loading from GitHub: ${error.message}`;
-    }
-    
 });
     </script>
 </body>
