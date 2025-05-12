@@ -1583,10 +1583,11 @@ saveBtn.addEventListener('click', async () => {
     }
 });
 
-// Check for saved GitHub credentials on page load
-window.addEventListener('DOMContentLoaded', () => {
-   
-    checkGitHubAuth();
+    // Check for saved GitHub credentials on page load
+window.addEventListener('DOMContentLoaded', async () => {
+    // First, check GitHub authentication
+    await checkGitHubAuth();
+    
     const username = localStorage.getItem('githubUsername');
     const repository = localStorage.getItem('githubRepository');
     const branch = localStorage.getItem('githubBranch') || 'main';
@@ -1599,11 +1600,27 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('githubStatus').textContent = 
             `Credentials saved for ${username}/${repository} (not connected)`;
         document.getElementById('githubStatus').style.color = '#f39c12';
+        
+        // Automatically attempt to load data from GitHub if authenticated
+        try {
+            if (githubConfig.isAuthenticated) {
+                const status = document.getElementById('status');
+                status.textContent = 'Automatically loading data from GitHub...';
+                
+                const success = await loadFitnessDataFromGitHub();
+                if (success) {
+                    status.textContent = 'Data automatically loaded from GitHub successfully';
+                } else {
+                    status.textContent = 'No data found on GitHub or load unsuccessful';
+                }
+            }
+        } catch (error) {
+            console.error('Automatic GitHub load error:', error);
+            document.getElementById('status').textContent = 
+                `Automatic load failed: ${error.message}`;
+        }
     }
 });
-     // Update on page load and window resize
-    window.addEventListener('load', updateDeviceInfo);
-    window.addEventListener('resize', updateDeviceInfo);
     </script>
 </body>
 </html>
