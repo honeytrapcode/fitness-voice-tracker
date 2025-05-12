@@ -108,7 +108,7 @@
       background-color: #2e8b57; /* slightly dark green */
     }
     
-      .status, .transcript, .instructions, .github-controls {
+      .status, .transcript, .github-controls {
         background-color: #222;
         padding: 15px;
         border-radius: 5px;
@@ -211,14 +211,6 @@
 <body>
     <div class="container">
         <h1>Tracker</h1>
-        
-        <div class="instructions">
-            <h3>How to use:</h3>
-            <p>1. Click "Start Recording" and speak your data.</p>
-            <p>2. Use simple phrases like "Today I ran 3.5 miles" or "Yesterday I did 50 pushups".</p>
-            <p>3. The transcript will appear below and will be processed to update your tracking data.</p>
-            <p>4. Alternatively, use the form below to manually enter your data.</p>
-        </div>
         
         <div class="controls">
             <button id="startBtn">Start Recording</button>
@@ -1584,9 +1576,8 @@ saveBtn.addEventListener('click', async () => {
 });
 
     // Check for saved GitHub credentials on page load
-window.addEventListener('DOMContentLoaded', async () => {
-    // First, check GitHub authentication
-    await checkGitHubAuth();
+window.addEventListener('DOMContentLoaded' () => {
+    checkGitHubAuth();
     
     const username = localStorage.getItem('githubUsername');
     const repository = localStorage.getItem('githubRepository');
