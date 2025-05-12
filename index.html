@@ -1576,25 +1576,27 @@ saveBtn.addEventListener('click', async () => {
 });
 
     // Check for saved GitHub credentials on page load
-window.addEventListener('DOMContentLoaded' () => {
-    checkGitHubAuth();
-    
-    const username = localStorage.getItem('githubUsername');
-    const repository = localStorage.getItem('githubRepository');
-    const branch = localStorage.getItem('githubBranch') || 'main';
-    
-    if (username && repository) {
-        githubConfig.username = username;
-        githubConfig.repository = repository;
-        githubConfig.branch = branch;
+    // Modified DOMContentLoaded event listener to auto-load from GitHub
+    window.addEventListener('DOMContentLoaded', async () => {
+       
+        // Check GitHub authentication first
+        await checkGitHubAuth();
         
-        document.getElementById('githubStatus').textContent = 
-            `Credentials saved for ${username}/${repository} (not connected)`;
-        document.getElementById('githubStatus').style.color = '#f39c12';
+        const username = localStorage.getItem('githubUsername');
+        const repository = localStorage.getItem('githubRepository');
+        const branch = localStorage.getItem('githubBranch') || 'main';
         
-        // Automatically attempt to load data from GitHub if authenticated
-        try {
-            if (githubConfig.isAuthenticated) {
+        if (username && repository) {
+            githubConfig.username = username;
+            githubConfig.repository = repository;
+            githubConfig.branch = branch;
+            
+            document.getElementById('githubStatus').textContent = 
+                `Credentials saved for ${username}/${repository} (not connected)`;
+            document.getElementById('githubStatus').style.color = '#f39c12';
+            
+            // Automatically attempt to load data from GitHub
+            try {
                 const status = document.getElementById('status');
                 status.textContent = 'Automatically loading data from GitHub...';
                 
@@ -1602,16 +1604,15 @@ window.addEventListener('DOMContentLoaded' () => {
                 if (success) {
                     status.textContent = 'Data automatically loaded from GitHub successfully';
                 } else {
-                    status.textContent = 'No data found on GitHub or load unsuccessful';
+                    status.textContent = 'No data found on GitHub or failed to load';
                 }
+            } catch (error) {
+                console.error('Automatic GitHub load error:', error);
+                const status = document.getElementById('status');
+                status.textContent = `Error automatically loading from GitHub: ${error.message}`;
             }
-        } catch (error) {
-            console.error('Automatic GitHub load error:', error);
-            document.getElementById('status').textContent = 
-                `Automatic load failed: ${error.message}`;
         }
-    }
-});
+    });
     </script>
 </body>
 </html>
