@@ -330,9 +330,35 @@
 
     <script>
 
-    // GitHub API Integration for Voice Fitness Tracker
-
-    // Add this code near the top of the script section
+    function normalizeDate(dateInput) {
+    // If it's already a Date object, return it
+    if (dateInput instanceof Date) {
+        return dateInput;
+    }
+    
+    // If it's empty/null/undefined, return today's date
+    if (!dateInput) {
+        return new Date();
+    }
+    
+    // If it's a string, try to parse it
+    if (typeof dateInput === 'string') {
+        // Check if it's an ISO format (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}/.test(dateInput)) {
+            return new Date(dateInput);
+        }
+        
+        // Check if it's DD/MM/YYYY format
+        if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateInput)) {
+            const [day, month, year] = dateInput.split('/').map(num => parseInt(num, 10));
+            return new Date(year, month - 1, day);
+        }
+    }
+    
+    // If we can't identify the format, try standard Date constructor
+    const result = new Date(dateInput);
+    return result;
+}
     
     // GitHub API Configuration
     let githubConfig = {
@@ -343,7 +369,22 @@
       isAuthenticated: false
     };
     
-    // GitHub Authentication Modal
+   function formatDateToISO(dateInput) {
+    const date = normalizeDate(dateInput);
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+        console.error("Invalid date:", dateInput);
+        return '';
+    }
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+}
+        
     // GitHub Authentication Modal - Updated with expiration notice
     function createGitHubAuthModal() {
       const modal = document.createElement('div');
@@ -743,14 +784,26 @@
             return false;
           }
         }
+
+        function formatDateToDDMMYYYY(dateInput) {
+    const date = normalizeDate(dateInput);
+    
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+        console.error("Invalid date:", dateInput);
+        return 'Invalid Date';
+    }
+    
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
+}
         
         // Helper function to format date as DD/MM/YYYY
        function formatDate(date) {
-            const d = new Date(date);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${year}-${month}-${day}`; // ISO format
+            return formatDateToISO(date);
         }
 
         function formatDateForDisplay(isoDate) {
@@ -781,22 +834,10 @@
                 return new Date('Invalid Date'); // Return invalid date if parsing fails
             }
         }
-        /**
-         * Format a Date object as `dd/mm/yyyy`.
-         * @param {Date} date - A valid Date object.
-         * @returns {string} - The formatted date string.
-         */
-        function formatDateToDDMMYYYY(date) {
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        }
-
 
         // Helper function to parse date from DD/MM/YYYY format
        function parseDate(dateStr) {
-            return dateStr; // assuming it's already 'YYYY-MM-DD'
+            return formatDateToISO(normalizeDate(dateStr));
         }
 
 
@@ -1008,24 +1049,24 @@
          * @return {Date} Extracted date or today's date if not found
          */
           function extractDate(text) {
-            let date = new Date();
-        
-            if (PATTERNS.date.yesterday.test(text)) {
-                date.setDate(date.getDate() - 1);
-            } else {
-                const dateMatch = text.match(PATTERNS.date.specificDate);
-                if (dateMatch) {
-                    const day = parseInt(dateMatch[1], 10);
-                    const month = parseInt(dateMatch[2], 10) - 1; // 0-indexed
-                    let year = dateMatch[3] ? parseInt(dateMatch[3], 10) : date.getFullYear();
-                    if (year < 100) year += 2000;
-                    const specifiedDate = new Date(year, month, day);
-                    if (!isNaN(specifiedDate.getTime())) date = specifiedDate;
-                }
-            }
-        
-            return date.toISOString().split('T')[0]; // ISO format
+    let date = new Date();
+    
+    if (PATTERNS.date.yesterday.test(text)) {
+        date.setDate(date.getDate() - 1);
+    } else {
+        const dateMatch = text.match(PATTERNS.date.specificDate);
+        if (dateMatch) {
+            const day = parseInt(dateMatch[1], 10);
+            const month = parseInt(dateMatch[2], 10) - 1; // 0-indexed
+            let year = dateMatch[3] ? parseInt(dateMatch[3], 10) : date.getFullYear();
+            if (year < 100) year += 2000;
+            const specifiedDate = new Date(year, month, day);
+            if (!isNaN(specifiedDate.getTime())) date = specifiedDate;
         }
+    }
+    
+    return formatDateToISO(date); // Return ISO format date
+}
         
         /**
          * Extract wake-up time from transcript text
@@ -1281,170 +1322,241 @@
         }
         // Render table with current data
         function renderTable() {
-        // Clear the table body
-        tableBody.innerHTML = '';
+    // Clear the table body
+    tableBody.innerHTML = '';
     
-        // Normalize the `date` field in `fitnessData`
-        fitnessData.forEach((item) => {
-            if (typeof item.date === 'string') {
-                // Parse the date if it's in string format
-                item.date = parseDateFromDDMMYYYY(item.date);
-            } else if (!(item.date instanceof Date)) {
-                console.error('Invalid date format found:', item.date);
-                item.date = new Date('Invalid Date'); // Assign an invalid date for consistency
+    // Create a copy of fitnessData for sorting
+    const sortedData = [...fitnessData];
+    
+    // Sort the data by date
+    sortedData.sort((a, b) => {
+        const dateA = normalizeDate(a.date);
+        const dateB = normalizeDate(b.date);
+        return dateA - dateB; // Sorts by ascending date
+    });
+    
+    // Loop through the sorted data and create table rows
+    sortedData.forEach((entry, index) => {
+        // Normalize the date for display
+        const displayDate = formatDateToDDMMYYYY(entry.date);
+        
+        // Create a new table row
+        const row = document.createElement('tr');
+        
+        // Populate the row with table data
+        row.innerHTML = `
+            <td>${displayDate}</td>
+            <td>${entry.wakeUpTime || ''}</td>
+            <td>${entry.milesRun || ''}</td>
+            <td>${entry.pressUps || ''}</td>
+            <td>${entry.sitUps || ''}</td>
+            <td>${entry.backs || ''}</td>
+            <td>${entry.headUps || ''}</td>
+            <td>${entry.guitarHours || ''}</td>
+            <td>${entry.drinks || ''}</td>
+            <td>${entry.flossed || ''}</td>
+            <td>${entry.finasteride || ''}</td>
+            <td>${entry.moodScore || ''}</td>
+            <td>
+                <button class="edit-btn" data-index="${index}">Edit</button>
+                <button class="delete-btn" data-index="${index}">Delete</button>
+            </td>
+        `;
+        
+        // Append the row to the table body
+        tableBody.appendChild(row);
+        
+        // Store the original index for edit/delete operations
+        fitnessData[index].originalIndex = index;
+    });
+    
+    // Add event listeners to edit and delete buttons
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const index = this.getAttribute('data-index');
+            editEntry(index);
+        });
+    });
+    
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const index = this.getAttribute('data-index');
+            if (confirm('Are you sure you want to delete this entry?')) {
+                fitnessData.splice(index, 1);
+                renderTable(); // Re-render the table after deletion
             }
         });
-    
-        // Sort the data by date
-        fitnessData.sort((a, b) => {
-            const dateA = a.date instanceof Date && !isNaN(a.date.getTime()) ? a.date : new Date('Invalid Date');
-            const dateB = b.date instanceof Date && !isNaN(b.date.getTime()) ? b.date : new Date('Invalid Date');
-            return dateA - dateB; // Sorts by ascending date
-        });
-    
-        // Loop through `fitnessData` and create table rows
-        fitnessData.forEach((entry, index) => {
-            // Create a new table row
-            const row = document.createElement('tr');
-    
-            // Populate the row with table data
-            row.innerHTML = `
-                <td>${entry.date instanceof Date && !isNaN(entry.date.getTime()) ? formatDateToDDMMYYYY(entry.date) : 'Invalid Date'}</td>
-                <td>${entry.wakeUpTime || ''}</td>
-                <td>${entry.milesRun || ''}</td>
-                <td>${entry.pressUps || ''}</td>
-                <td>${entry.sitUps || ''}</td>
-                <td>${entry.backs || ''}</td>
-                <td>${entry.headUps || ''}</td>
-                <td>${entry.guitarHours || ''}</td>
-                <td>${entry.drinks || ''}</td>
-                <td>${entry.flossed || ''}</td>
-                <td>${entry.finasteride || ''}</td>
-                <td>${entry.moodScore || ''}</td>
-                <td>
-                    <button class="edit-btn" data-index="${index}">Edit</button>
-                    <button class="delete-btn" data-index="${index}">Delete</button>
-                </td>
-            `;
-    
-            // Append the row to the table body
-            tableBody.appendChild(row);
-        });
-    
-        // Add event listeners to edit and delete buttons
-        document.querySelectorAll('.edit-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const index = this.getAttribute('data-index');
-                editEntry(index);
-            });
-        });
-    
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const index = this.getAttribute('data-index');
-                if (confirm('Are you sure you want to delete this entry?')) {
-                    fitnessData.splice(index, 1);
-                    renderTable(); // Re-render the table after deletion
-                }
-            });
-        });
-    }
+    });
+}
 
         // Edit an existing entry
         function editEntry(index) {
-            const entry = fitnessData[index];
-            
-            // Fill the form with the entry data
-            document.getElementById('datePicker').value = parseDate(entry.date);
-            document.getElementById('wakeTime').value = entry.wakeUpTime;
-            document.getElementById('milesRun').value = entry.milesRun;
-            document.getElementById('pressUps').value = entry.pressUps;
-            document.getElementById('sitUps').value = entry.sitUps;
-            document.getElementById('backs').value = entry.backs;
-            document.getElementById('headUps').value = entry.headUps;
-            document.getElementById('guitarHours').value = entry.guitarHours;
-            document.getElementById('drinks').value = entry.drinks;
-            document.getElementById('flossed').value = entry.flossed;
-            document.getElementById('finasteride').value = entry.finasteride;
-            document.getElementById('moodScore').value = entry.moodScore;
-            
-            // Change the Add Entry button to Update Entry
-            addEntryBtn.textContent = 'Update Entry';
-            addEntryBtn.setAttribute('data-edit-index', index);
-            
-            // Scroll to the form
-            document.querySelector('.form-entry').scrollIntoView({ behavior: 'smooth' });
+    const entry = fitnessData[index];
+    
+    // Fill the form with the entry data, ensuring date is in ISO format for the date picker
+    document.getElementById('datePicker').value = formatDateToISO(entry.date);
+    document.getElementById('wakeTime').value = entry.wakeUpTime;
+    document.getElementById('milesRun').value = entry.milesRun;
+    document.getElementById('pressUps').value = entry.pressUps;
+    document.getElementById('sitUps').value = entry.sitUps;
+    document.getElementById('backs').value = entry.backs;
+    document.getElementById('headUps').value = entry.headUps;
+    document.getElementById('guitarHours').value = entry.guitarHours;
+    document.getElementById('drinks').value = entry.drinks;
+    document.getElementById('flossed').value = entry.flossed;
+    document.getElementById('finasteride').value = entry.finasteride;
+    document.getElementById('moodScore').value = entry.moodScore;
+    
+    // Change the Add Entry button to Update Entry
+    addEntryBtn.textContent = 'Update Entry';
+    addEntryBtn.setAttribute('data-edit-index', index);
+    
+    // Scroll to the form
+    document.querySelector('.form-entry').scrollIntoView({ behavior: 'smooth' });
+}
+
+// 5. Update the addEntryBtn click handler
+
+addEntryBtn.addEventListener('click', () => {
+    const editIndex = addEntryBtn.getAttribute('data-edit-index');
+    
+    // Get the date from the form and convert to ISO format for storage
+    const formDate = document.getElementById('datePicker').value;
+    const isoDate = formatDateToISO(formDate);
+    
+    const newEntry = {
+        date: isoDate, // Store in ISO format consistently
+        wakeUpTime: document.getElementById('wakeTime').value,
+        milesRun: parseFloat(document.getElementById('milesRun').value) || 0,
+        pressUps: parseInt(document.getElementById('pressUps').value) || 0,
+        sitUps: parseInt(document.getElementById('sitUps').value) || 0,
+        backs: parseInt(document.getElementById('backs').value) || 0,
+        headUps: parseInt(document.getElementById('headUps').value) || 0,
+        guitarHours: parseFloat(document.getElementById('guitarHours').value) || 0,
+        drinks: parseInt(document.getElementById('drinks').value) || 0,
+        flossed: document.getElementById('flossed').value,
+        finasteride: document.getElementById('finasteride').value,
+        moodScore: parseInt(document.getElementById('moodScore').value) || ''
+    };
+    
+    if (editIndex !== null) {
+        // Update existing entry
+        fitnessData[editIndex] = newEntry;
+        addEntryBtn.textContent = 'Add Entry';
+        addEntryBtn.removeAttribute('data-edit-index');
+    } else {
+        // Check if entry for this date already exists
+        const existingIndex = fitnessData.findIndex(entry => 
+            formatDateToISO(entry.date) === isoDate
+        );
+        
+        if (existingIndex >= 0) {
+            if (confirm('An entry for this date already exists. Do you want to update it?')) {
+                fitnessData[existingIndex] = newEntry;
+            } else {
+                return;
+            }
+        } else {
+            // Add new entry
+            fitnessData.push(newEntry);
         }
+    }
+    
+    // Clear form
+    document.getElementById('datePicker').value = '';
+    document.getElementById('wakeTime').value = '';
+    document.getElementById('milesRun').value = '';
+    document.getElementById('pressUps').value = '';
+    document.getElementById('sitUps').value = '';
+    document.getElementById('backs').value = '';
+    document.getElementById('headUps').value = '';
+    document.getElementById('guitarHours').value = '';
+    document.getElementById('drinks').value = '';
+    document.getElementById('flossed').value = 'Yes';
+    document.getElementById('finasteride').value = 'Yes';
+    document.getElementById('moodScore').value = '';
+    
+    // Update table
+    renderTable();
+});
 
         // Convert data to CSV
-        function convertToCSV() {
-            // Define headers
-            const headers = ['Date', 'Wake Up Time', 'Miles Run', 'Press Ups', 'Sit Ups', 'Backs', 'Head Ups', 
-                            'Guitar Played / Hrs', 'Drinks', 'Flossed', 'Finasteride','Mood Score'];
-            
-            // Sort data by date (oldest first for CSV)
-            const sortedData = [...fitnessData].sort((a, b) => {
-                const dateA = a.date.split('/').reverse().join('');
-                const dateB = b.date.split('/').reverse().join('');
-                return dateA.localeCompare(dateB);
-            });
-            
-            // Create CSV rows
-            const csvRows = [];
-            csvRows.push(headers.join(','));
-            
-            sortedData.forEach(entry => {
-                const values = [
-                    entry.date,
-                    entry.wakeUpTime,
-                    entry.milesRun,
-                    entry.pressUps,
-                    entry.sitUps,
-                    entry.backs,
-                    entry.headUps,
-                    entry.guitarHours,
-                    entry.drinks,
-                    entry.flossed,
-                    entry.finasteride,
-                    entry.moodScore
-                ];
-                csvRows.push(values.join(','));
-            });
-            
-            return csvRows.join('\n');
-        }
+       function convertToCSV() {
+    // Define headers
+    const headers = ['Date', 'Wake Up Time', 'Miles Run', 'Press Ups', 'Sit Ups', 'Backs', 'Head Ups', 
+                    'Guitar Played / Hrs', 'Drinks', 'Flossed', 'Finasteride','Mood Score'];
+    
+    // Sort data by date (oldest first for CSV)
+    const sortedData = [...fitnessData].sort((a, b) => {
+        const dateA = normalizeDate(a.date);
+        const dateB = normalizeDate(b.date);
+        return dateA - dateB;
+    });
+    
+    // Create CSV rows
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+    
+    sortedData.forEach(entry => {
+        const displayDate = formatDateToDDMMYYYY(entry.date); // Use DD/MM/YYYY for CSV export
+        
+        const values = [
+            displayDate,
+            entry.wakeUpTime,
+            entry.milesRun,
+            entry.pressUps,
+            entry.sitUps,
+            entry.backs,
+            entry.headUps,
+            entry.guitarHours,
+            entry.drinks,
+            entry.flossed,
+            entry.finasteride,
+            entry.moodScore
+        ];
+        csvRows.push(values.join(','));
+    });
+    
+    return csvRows.join('\n');
+}
+
 
         // Parse CSV data
         function parseCSV(csvText) {
-            const lines = csvText.split('\n');
-            const headers = lines[0].split(',');
-            
-            const parsedData = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                
-                const values = lines[i].split(',');
-                const entry = {
-                    date: parseDateFromDDMMYYYY(values[0] || ''),
-                    wakeUpTime: values[1] || '',
-                    milesRun: parseFloat(values[2]) || 0,
-                    pressUps: parseInt(values[3]) || 0,
-                    sitUps: parseInt(values[4]) || 0,
-                    backs: parseInt(values[5]) || 0,
-                    headUps: parseInt(values[6]) || 0,
-                    guitarHours: parseFloat(values[7]) || 0,
-                    drinks: parseInt(values[8]) || 0,
-                    flossed: values[9] || 'No',
-                    finasteride: values[10] || 'No',
-                    moodScore: values[11] || ''
-                };
-                
-                parsedData.push(entry);
-            }
-            
-            return parsedData;
-        }
+    const lines = csvText.split('\n');
+    const headers = lines[0].split(',');
+    
+    const parsedData = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        const values = lines[i].split(',');
+        
+        // Try to parse the date, which should be in DD/MM/YYYY format in the CSV
+        const dateStr = values[0] || '';
+        const normalizedDate = formatDateToISO(dateStr); // Convert to ISO format for storage
+        
+        const entry = {
+            date: normalizedDate,
+            wakeUpTime: values[1] || '',
+            milesRun: parseFloat(values[2]) || 0,
+            pressUps: parseInt(values[3]) || 0,
+            sitUps: parseInt(values[4]) || 0,
+            backs: parseInt(values[5]) || 0,
+            headUps: parseInt(values[6]) || 0,
+            guitarHours: parseFloat(values[7]) || 0,
+            drinks: parseInt(values[8]) || 0,
+            flossed: values[9] || 'No',
+            finasteride: values[10] || 'No',
+            moodScore: values[11] || ''
+        };
+        
+        parsedData.push(entry);
+    }
+    
+    return parsedData;
+}
 
         // Event Listeners
         startBtn.addEventListener('click', () => {
