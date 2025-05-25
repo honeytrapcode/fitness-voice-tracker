@@ -1328,12 +1328,13 @@
     // Create a copy of fitnessData for sorting
     const sortedData = [...fitnessData];
     
-    // Sort the data by date
+    // Sort the data by date (most recent first)
     sortedData.sort((a, b) => {
         const dateA = normalizeDate(a.date);
         const dateB = normalizeDate(b.date);
-        return dateA - dateB; // Sorts by ascending date
+        return dateB - dateA; // Sorts by descending date
     });
+
     
     // Loop through the sorted data and create table rows
     sortedData.forEach((entry, index) => {
