@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
    <style>
        
         body {
@@ -51,7 +52,6 @@
       border-radius: 5px;
       margin-bottom: 20px;
       color: #ccc;
-      text-align: center; /* Add this line */
     }
        
     /* Replace the button styling in your CSS with this updated version */
@@ -122,13 +122,18 @@
       border-radius: 5px;
       margin-bottom: 20px;
       color: #ccc;
-      text-align: center; /* Add this line */
     }
 
        /* Add this new class after the form-entry class */
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
     .form-group {
-      flex: 0 0 calc(33.333% - 15px);
-      max-width: calc(33.333% - 15px);
+      flex: 1 1 calc(33.333% - 15px);
       min-width: 200px;
     }
 
@@ -184,9 +189,75 @@
                /* Add this media query at the end of your style section */
         @media (max-width: 768px) {
           .form-group {
-            flex: 0 0 100%;
-            max-width: 100%;
+            flex: 1 1 100%;
+            min-width: 0;
           }
+          
+          .container {
+            padding: 15px;
+          }
+          
+          .controls, .github-actions {
+            flex-direction: column;
+          }
+          
+          button {
+            width: 100%;
+          }
+        }
+
+        /* Media query for larger screens */
+        @media (min-width: 769px) {
+          .form-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+          }
+        }
+
+        /* Analytics section styles */
+        .analytics-section {
+          background-color: #222;
+          padding: 20px;
+          border-radius: 5px;
+          margin-bottom: 20px;
+        }
+
+        .chart-container {
+          background-color: rgba(34, 34, 34, 0.9);
+          padding: 15px;
+          border-radius: 5px;
+          margin-bottom: 20px;
+          height: 400px;
+        }
+
+        /* Table improvements */
+        .data-display {
+          overflow-x: auto;
+          margin-top: 20px;
+        }
+
+        table {
+          min-width: 100%;
+          white-space: nowrap;
+        }
+
+        th, td {
+          padding: 8px 12px;
+        }
+
+        /* Loading indicator */
+        .loading {
+          display: none;
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background-color: rgba(0, 0, 0, 0.8);
+          color: white;
+          padding: 20px;
+          border-radius: 5px;
+          z-index: 1000;
         }
     </style>
 
@@ -326,9 +397,296 @@
                 </table>
             </div>
         </div>
+        
+        <!-- Analytics Section -->
+        <div class="analytics-section">
+            <h3>Analytics</h3>
+            <div class="chart-container">
+                <canvas id="milesChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="exerciseChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="moodChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="loading">
+            Loading data...
+        </div>
     </div>
 
     <script>
+    // Add these variables at the top of your script
+    let charts = {
+        miles: null,
+        exercise: null,
+        mood: null
+    };
+    
+    // Function to show/hide loading indicator
+    function toggleLoading(show) {
+        document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+    }
+    
+    // Function to update all charts
+    function updateCharts() {
+        const weeklyData = calculateWeeklyStats();
+        updateMilesChart(weeklyData);
+        updateExerciseChart(weeklyData);
+        updateMoodChart(weeklyData);
+    }
+    
+    // Calculate weekly statistics
+    function calculateWeeklyStats() {
+        const weeks = {};
+        
+        fitnessData.forEach(entry => {
+            const date = new Date(entry.date);
+            const weekKey = `${date.getFullYear()}-W${getWeekNumber(date)}`;
+            
+            if (!weeks[weekKey]) {
+                weeks[weekKey] = {
+                    miles: 0,
+                    pressUps: 0,
+                    sitUps: 0,
+                    backs: 0,
+                    headUps: 0,
+                    moodScores: [],
+                    count: 0
+                };
+            }
+            
+            weeks[weekKey].miles += parseFloat(entry.milesRun) || 0;
+            weeks[weekKey].pressUps += parseInt(entry.pressUps) || 0;
+            weeks[weekKey].sitUps += parseInt(entry.sitUps) || 0;
+            weeks[weekKey].backs += parseInt(entry.backs) || 0;
+            weeks[weekKey].headUps += parseInt(entry.headUps) || 0;
+            if (entry.moodScore) {
+                weeks[weekKey].moodScores.push(parseInt(entry.moodScore));
+            }
+            weeks[weekKey].count++;
+        });
+        
+        return weeks;
+    }
+    
+    // Get week number for a date
+    function getWeekNumber(d) {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+    
+    // Update miles chart
+    function updateMilesChart(weeklyData) {
+        const ctx = document.getElementById('milesChart').getContext('2d');
+        const labels = Object.keys(weeklyData).sort();
+        const data = labels.map(week => weeklyData[week].miles);
+        
+        if (charts.miles) {
+            charts.miles.destroy();
+        }
+        
+        charts.miles = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Miles Run per Week',
+                    data: data,
+                    borderColor: '#2ecc71',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    // Update exercise chart
+    function updateExerciseChart(weeklyData) {
+        const ctx = document.getElementById('exerciseChart').getContext('2d');
+        const labels = Object.keys(weeklyData).sort();
+        
+        if (charts.exercise) {
+            charts.exercise.destroy();
+        }
+        
+        charts.exercise = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Press Ups',
+                        data: labels.map(week => weeklyData[week].pressUps),
+                        backgroundColor: '#3498db'
+                    },
+                    {
+                        label: 'Sit Ups',
+                        data: labels.map(week => weeklyData[week].sitUps),
+                        backgroundColor: '#e74c3c'
+                    },
+                    {
+                        label: 'Backs',
+                        data: labels.map(week => weeklyData[week].backs),
+                        backgroundColor: '#f1c40f'
+                    },
+                    {
+                        label: 'Head Ups',
+                        data: labels.map(week => weeklyData[week].headUps),
+                        backgroundColor: '#9b59b6'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        stacked: true
+                    },
+                    x: {
+                        stacked: true
+                    }
+                }
+            }
+        });
+    }
+    
+    // Update mood chart
+    function updateMoodChart(weeklyData) {
+        const ctx = document.getElementById('moodChart').getContext('2d');
+        const labels = Object.keys(weeklyData).sort();
+        const data = labels.map(week => {
+            const scores = weeklyData[week].moodScores;
+            return scores.length > 0 ? scores.reduce((a, b) => a + b) / scores.length : null;
+        });
+        
+        if (charts.mood) {
+            charts.mood.destroy();
+        }
+        
+        charts.mood = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Average Mood Score per Week',
+                    data: data,
+                    borderColor: '#e67e22',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10
+                    }
+                }
+            }
+        });
+    }
+
+    // Modify the existing renderTable function to update charts
+    const originalRenderTable = renderTable;
+    renderTable = function() {
+        originalRenderTable();
+        updateCharts();
+    };
+    
+    // Modify the GitHub loading function to automatically load data on startup
+    async function initializeApp() {
+        toggleLoading(true);
+        try {
+            const credentials = loadGitHubCredentials();
+            if (credentials && !credentials.expired) {
+                await loadFitnessDataFromGitHub();
+            }
+        } catch (error) {
+            console.error('Error loading initial data:', error);
+        } finally {
+            toggleLoading(false);
+            renderTable(); // This will also update the charts
+        }
+    }
+    
+    // Update the addEntryBtn click handler to fix date handling
+    addEntryBtn.addEventListener('click', () => {
+        const editIndex = addEntryBtn.getAttribute('data-edit-index');
+        const dateInput = document.getElementById('datePicker').value;
+        
+        if (!dateInput) {
+            alert('Please select a date');
+            return;
+        }
+        
+        const isoDate = formatDateToISO(dateInput);
+        
+        const newEntry = {
+            date: isoDate,
+            wakeUpTime: document.getElementById('wakeTime').value,
+            milesRun: parseFloat(document.getElementById('milesRun').value) || 0,
+            pressUps: parseInt(document.getElementById('pressUps').value) || 0,
+            sitUps: parseInt(document.getElementById('sitUps').value) || 0,
+            backs: parseInt(document.getElementById('backs').value) || 0,
+            headUps: parseInt(document.getElementById('headUps').value) || 0,
+            guitarHours: parseFloat(document.getElementById('guitarHours').value) || 0,
+            drinks: parseInt(document.getElementById('drinks').value) || 0,
+            flossed: document.getElementById('flossed').value,
+            finasteride: document.getElementById('finasteride').value,
+            moodScore: document.getElementById('moodScore').value || ''
+        };
+        
+        const existingIndex = editIndex !== null ? 
+            parseInt(editIndex) : 
+            fitnessData.findIndex(entry => entry.date === isoDate);
+        
+        if (existingIndex >= 0) {
+            fitnessData[existingIndex] = newEntry;
+        } else {
+            fitnessData.push(newEntry);
+        }
+        
+        // Reset form and button
+        addEntryBtn.textContent = 'Add Entry';
+        addEntryBtn.removeAttribute('data-edit-index');
+        
+        // Clear form fields
+        document.getElementById('datePicker').value = '';
+        document.getElementById('wakeTime').value = '';
+        document.getElementById('milesRun').value = '';
+        document.getElementById('pressUps').value = '';
+        document.getElementById('sitUps').value = '';
+        document.getElementById('backs').value = '';
+        document.getElementById('headUps').value = '';
+        document.getElementById('guitarHours').value = '';
+        document.getElementById('drinks').value = '';
+        document.getElementById('flossed').value = 'Yes';
+        document.getElementById('finasteride').value = 'Yes';
+        document.getElementById('moodScore').value = '';
+        
+        // Update table and charts
+        renderTable();
+    });
+    
+    // Initialize the app when the page loads
+    window.addEventListener('DOMContentLoaded', () => {
+        checkGitHubAuth();
+        initializeApp();
+    });
 
     function normalizeDate(dateInput) {
     // If it's already a Date object, return it
@@ -998,7 +1356,7 @@
             // Added variations: push ups, press ups, did 50 pushups, etc.
             pushups: /(?:did\s+)?(\d+)\s*(?:push\s*ups?|press\s*ups?)/i,
         
-            // Added “did” variation
+            // Added "did" variation
             situps: /(?:did\s+)?(\d+)\s*sit\s*ups?/i,
             backs: /(?:did\s+)?(\d+)\s*backs?/i,
             headUps: /(?:did\s+)?(\d+)\s*head\s*ups?/i
@@ -1021,7 +1379,7 @@
             finYes: /(?:took|had|used)\s+(?:my\s+)?finasteride/i,
             finNo: /(?:did(?:n't| not)\s+take|no\s+finasteride|forgot\s+finasteride)/i,
         
-            // Support “mood is 8”, “feeling 7”, “my mood today was 6”
+            // Support "mood is 8", "feeling 7", "my mood today was 6"
             mood: /(?:mood|feeling)(?:\s+(?:is|was|:))?\s+(\d{1,2})/i
           }
         };
@@ -1599,63 +1957,6 @@ addEntryBtn.addEventListener('click', () => {
                 };
                 reader.readAsText(file);
             }
-        });
-
-        addEntryBtn.addEventListener('click', () => {
-            const editIndex = addEntryBtn.getAttribute('data-edit-index');
-            
-            const newEntry = {
-                date: formatDate(document.getElementById('datePicker').value),
-                wakeUpTime: document.getElementById('wakeTime').value,
-                milesRun: parseFloat(document.getElementById('milesRun').value) || 0,
-                pressUps: parseInt(document.getElementById('pressUps').value) || 0,
-                sitUps: parseInt(document.getElementById('sitUps').value) || 0,
-                backs: parseInt(document.getElementById('backs').value) || 0,
-                headUps: parseInt(document.getElementById('headUps').value) || 0,
-                guitarHours: parseFloat(document.getElementById('guitarHours').value) || 0,
-                drinks: parseInt(document.getElementById('drinks').value) || 0,
-                flossed: document.getElementById('flossed').value,
-                finasteride: document.getElementById('finasteride').value,
-                moodScore: parseInt(document.getElementById('moodScore').value)
-            };
-            
-            if (editIndex !== null) {
-                // Update existing entry
-                fitnessData[editIndex] = newEntry;
-                addEntryBtn.textContent = 'Add Entry';
-                addEntryBtn.removeAttribute('data-edit-index');
-            } else {
-                // Check if entry for this date already exists
-                const existingIndex = fitnessData.findIndex(entry => entry.date === newEntry.date);
-                
-                if (existingIndex >= 0) {
-                    if (confirm('An entry for this date already exists. Do you want to update it?')) {
-                        fitnessData[existingIndex] = newEntry;
-                    } else {
-                        return;
-                    }
-                } else {
-                    // Add new entry
-                    fitnessData.push(newEntry);
-                }
-            }
-            
-            // Clear form
-            document.getElementById('datePicker').value = '';
-            document.getElementById('wakeTime').value = '';
-            document.getElementById('milesRun').value = '';
-            document.getElementById('pressUps').value = '';
-            document.getElementById('sitUps').value = '';
-            document.getElementById('backs').value = '';
-            document.getElementById('headUps').value = '';
-            document.getElementById('guitarHours').value = '';
-            document.getElementById('drinks').value = '';
-            document.getElementById('flossed').value = 'Yes';
-            document.getElementById('finasteride').value = 'Yes';
-            document.getElementById('moodScore').value = '';
-            
-            // Update table
-            renderTable();
         });
 
         // Initialize table on page load
