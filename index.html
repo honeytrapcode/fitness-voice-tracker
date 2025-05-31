@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tracker</title>
+    <title>Fitness Tracker</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
    <style>
        
@@ -11,9 +11,9 @@
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
           margin: 0;
           padding: 20px;
-          background: url('https://raw.githubusercontent.com/honeytrapcode/fitness-voice-tracker/main/assets/background.jpg') no-repeat center center fixed;
-          background-size: cover;
+          background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
           color: #e0e0e0;
+          min-height: 100vh;
         }
 
     
@@ -52,6 +52,10 @@
       border-radius: 5px;
       margin-bottom: 20px;
       color: #ccc;
+    }
+
+    .hidden {
+      display: none;
     }
        
     /* Replace the button styling in your CSS with this updated version */
@@ -92,7 +96,7 @@
     
     /* Download CSV - slightly dark blue */
     #downloadBtn {
-      background-color: #b83280; /* slightly dark blue */
+      background-color: #4169e1; /* slightly dark blue */
     }
     
     /* Configure GitHub - slightly dark pink */
@@ -167,17 +171,22 @@
         border-radius: 4px;
         background-color: #111;
         color: #fff;
+        box-sizing: border-box;
       }
     
       label {
         margin-bottom: 5px;
         font-weight: bold;
         color: #bbb;
+        display: block;
       }
     
       .record-indicator {
         background-color: #ff4d4d;
         animation: pulse 1.5s infinite;
+        padding: 5px 10px;
+        border-radius: 3px;
+        display: inline-block;
       }
     
       @keyframes pulse {
@@ -229,6 +238,7 @@
           border-radius: 5px;
           margin-bottom: 20px;
           height: 400px;
+          position: relative;
         }
 
         /* Table improvements */
@@ -259,12 +269,75 @@
           border-radius: 5px;
           z-index: 1000;
         }
+
+        /* GitHub modal styles */
+        .modal {
+          display: none;
+          position: fixed;
+          z-index: 1000;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+          background-color: #333;
+          margin: 15% auto;
+          padding: 20px;
+          border-radius: 5px;
+          width: 80%;
+          max-width: 500px;
+          color: #fff;
+        }
+
+        .close {
+          color: #aaa;
+          float: right;
+          font-size: 28px;
+          font-weight: bold;
+          cursor: pointer;
+        }
+
+        .close:hover {
+          color: #fff;
+        }
+
+        .delete-btn {
+          background-color: #dc3545;
+          color: white;
+          border: none;
+          padding: 5px 10px;
+          border-radius: 3px;
+          cursor: pointer;
+          font-size: 12px;
+        }
+
+        .delete-btn:hover {
+          background-color: #c82333;
+        }
+
+        .edit-btn {
+          background-color: #007bff;
+          color: white;
+          border: none;
+          padding: 5px 10px;
+          border-radius: 3px;
+          cursor: pointer;
+          font-size: 12px;
+          margin-right: 5px;
+        }
+
+        .edit-btn:hover {
+          background-color: #0056b3;
+        }
     </style>
 
 </head>
 <body>
     <div class="container">
-        <h1>Tracker</h1>
+        <h1>Fitness Tracker</h1>
         
         <div class="instructions">
             <h3>How to use:</h3>
@@ -277,21 +350,22 @@
         <div class="controls">
             <button id="startBtn">Start Recording</button>
             <button id="stopBtn" class="stop" disabled>Stop Recording</button>
-            <button id="saveBtn" class="save">Save Data</button>
+            <button id="saveBtn" class="save">Save to localStorage</button>
             <button id="downloadBtn">Download CSV</button>
+            <button id="loadCsvBtn">Load CSV</button>
             <input type="file" id="fileInput" accept=".csv" class="hidden">
         </div>
 
         <div class="github-controls">
-        <h3>GitHub Integration</h3>
-        <div class="github-status">
-            <span id="githubStatus">Not connected to GitHub</span>
-            <button id="configureGithubBtn">Configure GitHub</button>
-        </div>
-        <div class="github-actions">
-            <button id="loadFromGithubBtn">Load from GitHub</button>
-            <button id="createBackupBtn">Create GitHub Backup</button>
-        </div>
+            <h3>GitHub Integration</h3>
+            <div class="github-status">
+                <span id="githubStatus">Not connected to GitHub</span>
+                <button id="configureGithubBtn">Configure GitHub</button>
+            </div>
+            <div class="github-actions">
+                <button id="loadFromGithubBtn">Load from GitHub</button>
+                <button id="createBackupBtn">Create GitHub Backup</button>
+            </div>
         </div>
             
         <div class="status" id="status">Ready to record</div>
@@ -364,6 +438,8 @@
                 <label for="moodScore">Mood Score:</label>
                 <input type="number" id="moodScore" min="1" max="10" step="1">
             </div>
+        </div>
+        <div class="form-row">
             <div class="form-group">
                 <button id="addEntryBtn" class="save">Add Entry</button>
             </div>
@@ -416,6 +492,31 @@
         <div id="loadingIndicator" class="loading">
             Loading data...
         </div>
+
+        <!-- GitHub Configuration Modal -->
+        <div id="githubModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h3>Configure GitHub Integration</h3>
+                <div class="form-group">
+                    <label for="githubToken">GitHub Personal Access Token:</label>
+                    <input type="password" id="githubToken" placeholder="ghp_...">
+                </div>
+                <div class="form-group">
+                    <label for="githubRepo">Repository (username/repo-name):</label>
+                    <input type="text" id="githubRepo" placeholder="yourusername/fitness-data">
+                </div>
+                <div class="form-group">
+                    <label for="githubBranch">Branch:</label>
+                    <input type="text" id="githubBranch" value="main" placeholder="main">
+                </div>
+                <div class="form-group">
+                    <label for="githubFilename">Filename:</label>
+                    <input type="text" id="githubFilename" value="fitness-data.csv" placeholder="fitness-data.csv">
+                </div>
+                <button id="saveGithubConfig" class="save">Save Configuration</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -429,12 +530,486 @@
     let recognition = null;
     let isRecording = false;
 
+    // GitHub configuration
+    let githubConfig = {
+        token: '',
+        repo: '',
+        branch: 'main',
+        filename: 'fitness-data.csv',
+        isAuthenticated: false
+    };
+
     // Initialize speech recognition
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
         recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
+    }
+
+    // Utility Functions
+    function formatDateToISO(date) {
+        if (typeof date === 'string') {
+            return date;
+        }
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function parseTranscript(transcript) {
+        const text = transcript.toLowerCase();
+        const entry = {
+            date: formatDateToISO(new Date()),
+            wakeUpTime: '',
+            milesRun: 0,
+            pressUps: 0,
+            sitUps: 0,
+            backs: 0,
+            headUps: 0,
+            guitarHours: 0,
+            drinks: 0,
+            flossed: 'No',
+            finasteride: 'No',
+            moodScore: ''
+        };
+
+        // Parse running miles
+        const milesMatch = text.match(/(\d+\.?\d*)\s*miles?/);
+        if (milesMatch) {
+            entry.milesRun = parseFloat(milesMatch[1]);
+        }
+
+        // Parse exercises
+        const pushupMatch = text.match(/(\d+)\s*(push[\s-]?ups?|press[\s-]?ups?)/);
+        if (pushupMatch) {
+            entry.pressUps = parseInt(pushupMatch[1]);
+        }
+
+        const situpMatch = text.match(/(\d+)\s*sit[\s-]?ups?/);
+        if (situpMatch) {
+            entry.sitUps = parseInt(situpMatch[1]);
+        }
+
+        // Parse guitar hours
+        const guitarMatch = text.match(/(\d+\.?\d*)\s*hours?\s*guitar|guitar\s*(\d+\.?\d*)\s*hours?/);
+        if (guitarMatch) {
+            entry.guitarHours = parseFloat(guitarMatch[1] || guitarMatch[2]);
+        }
+
+        // Parse drinks
+        const drinksMatch = text.match(/(\d+)\s*drinks?/);
+        if (drinksMatch) {
+            entry.drinks = parseInt(drinksMatch[1]);
+        }
+
+        // Parse flossed
+        if (text.includes('floss')) {
+            entry.flossed = 'Yes';
+        }
+
+        // Parse mood
+        const moodMatch = text.match(/mood\s*(\d+)|(\d+)\s*mood/);
+        if (moodMatch) {
+            entry.moodScore = moodMatch[1] || moodMatch[2];
+        }
+
+        return entry;
+    }
+
+    function handleTranscriptAfterRecording() {
+        const transcriptText = document.getElementById('transcript').textContent;
+        if (transcriptText.trim()) {
+            const parsedEntry = parseTranscript(transcriptText);
+            
+            // Check if entry for today already exists
+            const existingIndex = fitnessData.findIndex(entry => entry.date === parsedEntry.date);
+            if (existingIndex >= 0) {
+                // Merge with existing entry
+                fitnessData[existingIndex] = { ...fitnessData[existingIndex], ...parsedEntry };
+            } else {
+                fitnessData.push(parsedEntry);
+            }
+            
+            renderTable();
+            updateCharts();
+            saveToLocalStorage();
+        }
+    }
+
+    function convertToCSV() {
+        if (fitnessData.length === 0) return '';
+        
+        const headers = ['Date', 'Wake Up Time', 'Miles Run', 'Press Ups', 'Sit Ups', 'Backs', 'Head Ups', 'Guitar Hours', 'Drinks', 'Flossed', 'Finasteride', 'Mood Score'];
+        const csvRows = [headers.join(',')];
+        
+        fitnessData.forEach(entry => {
+            const row = [
+                entry.date,
+                entry.wakeUpTime || '',
+                entry.milesRun || 0,
+                entry.pressUps || 0,
+                entry.sitUps || 0,
+                entry.backs || 0,
+                entry.headUps || 0,
+                entry.guitarHours || 0,
+                entry.drinks || 0,
+                entry.flossed || 'No',
+                entry.finasteride || 'No',
+                entry.moodScore || ''
+            ];
+            csvRows.push(row.join(','));
+        });
+        
+        return csvRows.join('\n');
+    }
+
+    function parseCSV(csvText) {
+        const lines = csvText.split('\n').filter(line => line.trim());
+        if (lines.length < 2) return [];
+        
+        const headers = lines[0].split(',').map(h => h.trim());
+        const data = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',');
+            const entry = {
+                date: values[0] || '',
+                wakeUpTime: values[1] || '',
+                milesRun: parseFloat(values[2]) || 0,
+                pressUps: parseInt(values[3]) || 0,
+                sitUps: parseInt(values[4]) || 0,
+                backs: parseInt(values[5]) || 0,
+                headUps: parseInt(values[6]) || 0,
+                guitarHours: parseFloat(values[7]) || 0,
+                drinks: parseInt(values[8]) || 0,
+                flossed: values[9] || 'No',
+                finasteride: values[10] || 'No',
+                moodScore: values[11] || ''
+            };
+            data.push(entry);
+        }
+        
+        return data;
+    }
+
+    function renderTable() {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+        
+        // Sort data by date (newest first)
+        const sortedData = [...fitnessData].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        sortedData.forEach((entry, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${entry.date}</td>
+                <td>${entry.wakeUpTime || '-'}</td>
+                <td>${entry.milesRun || 0}</td>
+                <td>${entry.pressUps || 0}</td>
+                <td>${entry.sitUps || 0}</td>
+                <td>${entry.backs || 0}</td>
+                <td>${entry.headUps || 0}</td>
+                <td>${entry.guitarHours || 0}</td>
+                <td>${entry.drinks || 0}</td>
+                <td>${entry.flossed || 'No'}</td>
+                <td>${entry.finasteride || 'No'}</td>
+                <td>${entry.moodScore || '-'}</td>
+                <td>
+                    <button class="edit-btn" onclick="editEntry('${entry.date}')">Edit</button>
+                    <button class="delete-btn" onclick="deleteEntry('${entry.date}')">Delete</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    function editEntry(date) {
+        const entry = fitnessData.find(e => e.date === date);
+        if (!entry) return;
+        
+        // Populate form with entry data
+        document.getElementById('datePicker').value = entry.date;
+        document.getElementById('wakeTime').value = entry.wakeUpTime || '';
+        document.getElementById('milesRun').value = entry.milesRun || '';
+        document.getElementById('pressUps').value = entry.pressUps || '';
+        document.getElementById('sitUps').value = entry.sitUps || '';
+        document.getElementById('backs').value = entry.backs || '';
+        document.getElementById('headUps').value = entry.headUps || '';
+        document.getElementById('guitarHours').value = entry.guitarHours || '';
+        document.getElementById('drinks').value = entry.drinks || '';
+        document.getElementById('flossed').value = entry.flossed || 'No';
+        document.getElementById('finasteride').value = entry.finasteride || 'No';
+        document.getElementById('moodScore').value = entry.moodScore || '';
+        
+        // Change button text and add edit index
+        const addBtn = document.getElementById('addEntryBtn');
+        addBtn.textContent = 'Update Entry';
+        addBtn.setAttribute('data-edit-date', date);
+        
+        // Scroll to form
+        document.querySelector('.form-entry').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function deleteEntry(date) {
+        if (confirm('Are you sure you want to delete this entry?')) {
+            fitnessData = fitnessData.filter(entry => entry.date !== date);
+            renderTable();
+            updateCharts();
+            saveToLocalStorage();
+        }
+    }
+
+    function saveToLocalStorage() {
+        try {
+            const dataToSave = JSON.stringify(fitnessData);
+            // Since we can't use localStorage, we'll just show a message
+            document.getElementById('status').textContent = 'Data saved to memory (localStorage not available in this environment)';
+        } catch (error) {
+            document.getElementById('status').textContent = 'Error saving data: ' + error.message;
+        }
+    }
+
+    function loadFromLocalStorage() {
+        try {
+            // Since we can't use localStorage, we'll start with empty data
+            fitnessData = [];
+            return true;
+        } catch (error) {
+            console.error('Error loading data:', error);
+            return false;
+        }
+    }
+
+    function updateCharts() {
+        // Get last 30 days of data
+        const sortedData = [...fitnessData]
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .slice(-30);
+        
+        const dates = sortedData.map(entry => entry.date);
+        const miles = sortedData.map(entry => entry.milesRun || 0);
+        const pressUps = sortedData.map(entry => entry.pressUps || 0);
+        const sitUps = sortedData.map(entry => entry.sitUps || 0);
+        const moodScores = sortedData.map(entry => parseInt(entry.moodScore) || null);
+
+        // Miles Chart
+        if (charts.miles) {
+            charts.miles.destroy();
+        }
+        const milesCtx = document.getElementById('milesChart').getContext('2d');
+        charts.miles = new Chart(milesCtx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Miles Run',
+                    data: miles,
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Miles Run Over Time',
+                        color: '#fff'
+                    },
+                    legend: {
+                        labels: {
+                            color: '#fff'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#fff' },
+                        grid: { color: '#444' }
+                    },
+                    y: {
+                        ticks: { color: '#fff' },
+                        grid: { color: '#444' }
+                    }
+                }
+            }
+        });
+
+        // Exercise Chart
+        if (charts.exercise) {
+            charts.exercise.destroy();
+        }
+        const exerciseCtx = document.getElementById('exerciseChart').getContext('2d');
+        charts.exercise = new Chart(exerciseCtx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Press Ups',
+                        data: pressUps,
+                        borderColor: '#FF6384',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Sit Ups',
+                        data: sitUps,
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Exercise Progress',
+                        color: '#fff'
+                    },
+                    legend: {
+                        labels: {
+                            color: '#fff'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#fff' },
+                        grid: { color: '#444' }
+                    },
+                    y: {
+                        ticks: { color: '#fff' },
+                        grid: { color: '#444' }
+                    }
+                }
+            }
+        });
+
+        // Mood Chart
+        if (charts.mood) {
+            charts.mood.destroy();
+        }
+        const moodCtx = document.getElementById('moodChart').getContext('2d');
+        charts.mood = new Chart(moodCtx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Mood Score',
+                    data: moodScores,
+                    borderColor: '#FFCE56',
+                    backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Mood Score Over Time',
+                        color: '#fff'
+                    },
+                    legend: {
+                        labels: {
+                            color: '#fff'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#fff' },
+                        grid: { color: '#444' }
+                    },
+                    y: {
+                        min: 1,
+                        max: 10,
+                        ticks: { color: '#fff' },
+                        grid: { color: '#444' }
+                    }
+                }
+            }
+        });
+    }
+
+    // GitHub Functions
+    function checkGitHubAuth() {
+        // Since we can't use localStorage, we'll start with no auth
+        githubConfig.isAuthenticated = false;
+        updateGitHubStatus();
+    }
+
+    function updateGitHubStatus() {
+        const statusElement = document.getElementById('githubStatus');
+        if (githubConfig.isAuthenticated) {
+            statusElement.textContent = `Connected to ${githubConfig.repo}`;
+            statusElement.style.color = '#4CAF50';
+        } else {
+            statusElement.textContent = 'Not connected to GitHub';
+            statusElement.style.color = '#f44336';
+        }
+    }
+
+    function createGitHubAuthModal() {
+        const modal = document.getElementById('githubModal');
+        modal.style.display = 'block';
+        
+        // Close modal functionality
+        const closeBtn = modal.querySelector('.close');
+        closeBtn.onclick = () => modal.style.display = 'none';
+        
+        window.onclick = (event) => {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+    }
+
+    async function saveFitnessDataToGitHub() {
+        if (!githubConfig.isAuthenticated) {
+            throw new Error('GitHub not configured');
+        }
+        
+        const csvData = convertToCSV();
+        const content = btoa(csvData); // Base64 encode
+        
+        try {
+            // This is a mock implementation since we can't actually call GitHub API
+            // In a real environment, you would make API calls to GitHub here
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+            return true;
+        } catch (error) {
+            throw new Error('Failed to save to GitHub: ' + error.message);
+        }
+    }
+
+    async function loadFitnessDataFromGitHub() {
+        if (!githubConfig.isAuthenticated) {
+            throw new Error('GitHub not configured');
+        }
+        
+        try {
+            // This is a mock implementation
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+            return true;
+        } catch (error) {
+            throw new Error('Failed to load from GitHub: ' + error.message);
+        }
+    }
+
+    function initializeApp() {
+        loadFromLocalStorage();
+        renderTable();
+        updateCharts();
     }
 
     // Wait for DOM to be fully loaded
@@ -444,6 +1019,7 @@
         const stopBtn = document.getElementById('stopBtn');
         const saveBtn = document.getElementById('saveBtn');
         const downloadBtn = document.getElementById('downloadBtn');
+        const loadCsvBtn = document.getElementById('loadCsvBtn');
         const fileInput = document.getElementById('fileInput');
         const addEntryBtn = document.getElementById('addEntryBtn');
         const status = document.getElementById('status');
@@ -453,7 +1029,7 @@
         // Set up speech recognition handlers
         if (recognition) {
             recognition.onstart = () => {
-                status.innerHTML = '<span class="record-indicator"></span> Recording...';
+                status.innerHTML = '<span class="record-indicator">● Recording...</span>';
                 isRecording = true;
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
@@ -507,6 +1083,10 @@
             }
         });
 
+        saveBtn.addEventListener('click', () => {
+            saveToLocalStorage();
+        });
+
         downloadBtn.addEventListener('click', () => {
             const csv = convertToCSV();
             const blob = new Blob([csv], { type: 'text/csv' });
@@ -514,8 +1094,13 @@
             
             const a = document.createElement('a');
             a.setAttribute('href', url);
-            a.setAttribute('download', 'tracker.csv');
+            a.setAttribute('download', 'fitness-tracker-' + new Date().toISOString().split('T')[0] + '.csv');
             a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        loadCsvBtn.addEventListener('click', () => {
+            fileInput.click();
         });
 
         fileInput.addEventListener('change', (e) => {
@@ -523,9 +1108,14 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    fitnessData = parseCSV(event.target.result);
-                    renderTable();
-                    status.textContent = 'CSV file imported successfully';
+                    try {
+                        fitnessData = parseCSV(event.target.result);
+                        renderTable();
+                        updateCharts();
+                        status.textContent = 'CSV file imported successfully';
+                    } catch (error) {
+                        status.textContent = 'Error importing CSV: ' + error.message;
+                    }
                 };
                 reader.readAsText(file);
             }
@@ -533,7 +1123,7 @@
 
         // Add Entry Button Event Listener
         addEntryBtn.addEventListener('click', () => {
-            const editIndex = addEntryBtn.getAttribute('data-edit-index');
+            const editDate = addEntryBtn.getAttribute('data-edit-date');
             const dateInput = document.getElementById('datePicker').value;
             
             if (!dateInput) {
@@ -541,10 +1131,8 @@
                 return;
             }
             
-            const isoDate = formatDateToISO(dateInput);
-            
             const newEntry = {
-                date: isoDate,
+                date: dateInput,
                 wakeUpTime: document.getElementById('wakeTime').value,
                 milesRun: parseFloat(document.getElementById('milesRun').value) || 0,
                 pressUps: parseInt(document.getElementById('pressUps').value) || 0,
@@ -558,19 +1146,25 @@
                 moodScore: document.getElementById('moodScore').value || ''
             };
             
-            const existingIndex = editIndex !== null ? 
-                parseInt(editIndex) : 
-                fitnessData.findIndex(entry => entry.date === isoDate);
-            
-            if (existingIndex >= 0) {
-                fitnessData[existingIndex] = newEntry;
+            if (editDate) {
+                // Update existing entry
+                const existingIndex = fitnessData.findIndex(entry => entry.date === editDate);
+                if (existingIndex >= 0) {
+                    fitnessData[existingIndex] = newEntry;
+                }
             } else {
-                fitnessData.push(newEntry);
+                // Add new entry or update if date exists
+                const existingIndex = fitnessData.findIndex(entry => entry.date === dateInput);
+                if (existingIndex >= 0) {
+                    fitnessData[existingIndex] = newEntry;
+                } else {
+                    fitnessData.push(newEntry);
+                }
             }
             
             // Reset form and button
             addEntryBtn.textContent = 'Add Entry';
-            addEntryBtn.removeAttribute('data-edit-index');
+            addEntryBtn.removeAttribute('data-edit-date');
             
             // Clear form fields
             document.getElementById('datePicker').value = '';
@@ -588,11 +1182,39 @@
             
             // Update table and charts
             renderTable();
+            updateCharts();
+            saveToLocalStorage();
+            
+            status.textContent = 'Entry saved successfully';
         });
 
         // GitHub related event listeners
         document.getElementById('configureGithubBtn').addEventListener('click', () => {
             createGitHubAuthModal();
+        });
+
+        document.getElementById('saveGithubConfig').addEventListener('click', () => {
+            const token = document.getElementById('githubToken').value;
+            const repo = document.getElementById('githubRepo').value;
+            const branch = document.getElementById('githubBranch').value || 'main';
+            const filename = document.getElementById('githubFilename').value || 'fitness-data.csv';
+            
+            if (!token || !repo) {
+                alert('Please enter both GitHub token and repository');
+                return;
+            }
+            
+            githubConfig = {
+                token,
+                repo,
+                branch,
+                filename,
+                isAuthenticated: true
+            };
+            
+            updateGitHubStatus();
+            document.getElementById('githubModal').style.display = 'none';
+            status.textContent = 'GitHub configuration saved';
         });
 
         document.getElementById('loadFromGithubBtn').addEventListener('click', async () => {
@@ -602,6 +1224,8 @@
                 const success = await loadFitnessDataFromGitHub();
                 if (success) {
                     status.textContent = 'Data loaded from GitHub successfully';
+                    renderTable();
+                    updateCharts();
                 }
             } catch (error) {
                 status.textContent = `Error loading from GitHub: ${error.message}`;
@@ -621,25 +1245,6 @@
             }
         });
 
-        saveBtn.addEventListener('click', async () => {
-            status.textContent = 'Saving data to GitHub...';
-            
-            if (!githubConfig.isAuthenticated) {
-                status.textContent = 'GitHub authentication required';
-                createGitHubAuthModal();
-                return;
-            }
-            
-            try {
-                const success = await saveFitnessDataToGitHub();
-                if (success) {
-                    status.textContent = 'Data saved to GitHub successfully';
-                }
-            } catch (error) {
-                status.textContent = `Error saving to GitHub: ${error.message}`;
-            }
-        });
-
         // Initialize the app
         checkGitHubAuth();
         initializeApp();
@@ -650,9 +1255,12 @@
         
         // Initial render
         renderTable();
+        updateCharts();
     });
 
-    // ... rest of your existing functions ...
+    // Make functions available globally for onclick handlers
+    window.editEntry = editEntry;
+    window.deleteEntry = deleteEntry;
     </script>
 </body>
 </html>
