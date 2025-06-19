@@ -1,10 +1,8 @@
-   # Voice-Enabled Fitness Tracker
+   # Personal Tracker
 
-   A web application that allows tracking of daily fitness activities using voice commands.
-   The application uses the Web Speech API to convert speech to text and updates a CSV-based fitness log.
+   A web application that allows tracking of daily metrics to enhance overall function.
 
    ## Features
-   - Voice input for tracking fitness activities
    - Manual data entry form
-   - CSV export and import
+   - Last month's insights (coming soon)
    - Data visualization (coming soon)
