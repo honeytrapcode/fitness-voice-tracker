@@ -3,1358 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fitness Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-   <style>
-       
+    <title>Tracker</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Use the Inter font family */
         body {
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          margin: 0;
-          padding: 20px;
-          background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-          color: #e0e0e0;
-          min-height: 100vh;
+            font-family: 'Inter', sans-serif;
         }
-
-    
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        background-color: rgba(26, 26, 26, 0.85);
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(255, 255, 255, 0.05);
-      }
-    
-      h1 {
-          color: #ffffff;
-          text-align: center;
-          margin-bottom: 30px;
+        /* Custom styles for better form appearance */
+        .form-input {
+            @apply w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow;
         }
-        
-      h3 {
-          color: #ffffff;
-          text-align: center;
-          margin-bottom: 20px;
+        .form-label {
+            @apply block mb-2 text-sm font-medium text-gray-700;
         }
-
-    
-      .controls, .github-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin-bottom: 30px;
-      }
-
-    .form-entry {
-      background-color: #222;
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 20px;
-      color: #ccc;
-    }
-
-    .hidden {
-      display: none;
-    }
-       
-    /* Replace the button styling in your CSS with this updated version */
-    button {
-      padding: 12px 20px;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.3s;
-    }
-    
-    button:hover {
-      filter: brightness(110%);
-    }
-    
-    button:disabled {
-      background-color: #444;
-      cursor: not-allowed;
-    }
-    
-    /* Start Recording - slightly dark amber */
-    #startBtn {
-      background-color: #d4a017; /* slightly dark amber */
-    }
-    
-    /* Stop Recording - keep as is */
-    button.stop, #stopBtn {
-      background-color: #d11a2a; /* original red */
-    }
-    
-    /* Save Data - slightly dark green */
-    button.save, #saveBtn {
-      background-color: #2e8b57; /* slightly dark green */
-      color: white; /* Change text color to white for better contrast */
-    }
-    
-    /* Download CSV - slightly dark blue */
-    #downloadBtn {
-      background-color: #4169e1; /* slightly dark blue */
-    }
-    
-    /* Configure GitHub - slightly dark pink */
-    #configureGithubBtn {
-      background-color: #b83280; /* slightly dark pink */
-    }
-    
-    #loadFromGithubBtn {
-      background-color: #d4a017; /* slightly dark amber */
-    }
-    /* Create GitHub Backup - slightly dark pink */
-     #createBackupBtn {
-      background-color: #2e8b57; /* slightly dark green */
-    }
-    
-      .status, .transcript, .instructions, .github-controls {
-        background-color: #222;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-        color: #ccc;
-      }
-
-       .form-entry {
-      background-color: #222;
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 20px;
-      color: #ccc;
-    }
-
-       /* Add this new class after the form-entry class */
-    .form-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-bottom: 15px;
-    }
-
-    .form-group {
-      flex: 1 1 calc(33.333% - 15px);
-      min-width: 200px;
-    }
-
-       
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        color: #ddd;
-        overflow-x: auto;
-      }
-    
-      th, td {
-        border: 1px solid #444;
-        padding: 12px;
-        text-align: left;
-      }
-    
-      th {
-        background-color: #333;
-      }
-    
-      tr:nth-child(even) {
-        background-color: #1c1c1c;
-      }
-    
-      input, select {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #555;
-        border-radius: 4px;
-        background-color: #111;
-        color: #fff;
-        box-sizing: border-box;
-      }
-    
-      label {
-        margin-bottom: 5px;
-        font-weight: bold;
-        color: #bbb;
-        display: block;
-      }
-    
-      .record-indicator {
-        background-color: #ff4d4d;
-        animation: pulse 1.5s infinite;
-        padding: 5px 10px;
-        border-radius: 3px;
-        display: inline-block;
-      }
-    
-      @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-      }
-
-               /* Add this media query at the end of your style section */
-        @media (max-width: 768px) {
-          .form-group {
-            flex: 1 1 100%;
-            min-width: 0;
-          }
-          
-          .container {
-            padding: 15px;
-          }
-          
-          .controls, .github-actions {
-            flex-direction: column;
-          }
-          
-          button {
-            width: 100%;
-          }
-        }
-
-        /* Media query for larger screens */
-        @media (min-width: 769px) {
-          .form-row {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-          }
-        }
-
-        /* Analytics section styles */
-        .analytics-section {
-          background-color: #222;
-          padding: 20px;
-          border-radius: 5px;
-          margin-bottom: 20px;
-        }
-
-        .chart-container {
-          background-color: rgba(34, 34, 34, 0.9);
-          padding: 15px;
-          border-radius: 5px;
-          margin-bottom: 20px;
-          height: 400px;
-          position: relative;
-        }
-
-        /* Table improvements */
-        .data-display {
-          overflow-x: auto;
-          margin-top: 20px;
-        }
-
-        table {
-          min-width: 100%;
-          white-space: nowrap;
-        }
-
-        th, td {
-          padding: 8px 12px;
-        }
-
-        /* Loading indicator */
-        .loading {
-          display: none;
-          position: fixed;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background-color: rgba(0, 0, 0, 0.8);
-          color: white;
-          padding: 20px;
-          border-radius: 5px;
-          z-index: 1000;
-        }
-
-        /* GitHub modal styles */
-        .modal {
-          display: none;
-          position: fixed;
-          z-index: 1000;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-          background-color: #333;
-          margin: 15% auto;
-          padding: 20px;
-          border-radius: 5px;
-          width: 80%;
-          max-width: 500px;
-          color: #fff;
-        }
-
-        .close {
-          color: #aaa;
-          float: right;
-          font-size: 28px;
-          font-weight: bold;
-          cursor: pointer;
-        }
-
-        .close:hover {
-          color: #fff;
-        }
-
-        .delete-btn {
-          background-color: #dc3545;
-          color: white;
-          border: none;
-          padding: 5px 10px;
-          border-radius: 3px;
-          cursor: pointer;
-          font-size: 12px;
-        }
-
-        .delete-btn:hover {
-          background-color: #c82333;
-        }
-
-        .edit-btn {
-          background-color: #007bff;
-          color: white;
-          border: none;
-          padding: 5px 10px;
-          border-radius: 3px;
-          cursor: pointer;
-          font-size: 12px;
-          margin-right: 5px;
-        }
-
-        .edit-btn:hover {
-          background-color: #0056b3;
+        /* Style for the submit button */
+        .submit-button {
+            @apply w-full px-6 py-3 text-white bg-blue-600 rounded-lg font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:scale-105;
         }
     </style>
-
 </head>
-<body>
-    <div class="container">
-        <h1>Fitness Tracker</h1>
-        
-        <div class="instructions">
-            <h3>How to use:</h3>
-            <p>1. Click "Start Recording" and speak your data.</p>
-            <p>2. Use simple phrases like "Today I ran 3.5 miles" or "Yesterday I did 50 pushups".</p>
-            <p>3. The transcript will appear below and will be processed to update your tracking data.</p>
-            <p>4. Alternatively, use the form below to manually enter your data.</p>
-        </div>
-        
-        <div class="controls">
-            <button id="startBtn">Start Recording</button>
-            <button id="stopBtn" class="stop" disabled>Stop Recording</button>
-            <button id="saveBtn" class="save">Save to localStorage</button>
-            <button id="downloadBtn">Download CSV</button>
-            <button id="loadCsvBtn">Load CSV</button>
-            <input type="file" id="fileInput" accept=".csv" class="hidden">
-        </div>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-        <div class="github-controls">
-            <h3>GitHub Integration</h3>
-            <div class="github-status">
-                <span id="githubStatus">Not connected to GitHub</span>
-                <button id="configureGithubBtn">Configure GitHub</button>
+    <main class="w-full max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+        <div class="bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+            <!-- Header section -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Tracker</h1>
+                <p class="text-gray-500 mt-2">For a better you.</p>
             </div>
-            <div class="github-actions">
-                <button id="loadFromGithubBtn">Load from GitHub</button>
-                <button id="createBackupBtn">Create GitHub Backup</button>
-            </div>
-        </div>
+
+            <!-- Data Entry Form -->
+            <form id="data-form" name="data-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Column 1 -->
+                    <div>
+                        <label for="Date" class="form-label">Date</label>
+                        <input type="date" id="Date" name="Date" class="form-input" required>
+                    </div>
+                    <div>
+                        <label for="Wake Up Time" class="form-label">Wake Up Time</label>
+                        <input type="time" id="Wake Up Time" name="Wake Up Time" class="form-input" required>
+                    </div>
+                     <div>
+                        <label for="Miles Run" class="form-label">Miles Run</label>
+                        <input type="number" step="0.01" id="Miles Run" name="Miles Run" class="form-input" placeholder="e.g., 3.1" required>
+                    </div>
+                    <div>
+                        <label for="Guitar Played / Hrs" class="form-label">Guitar Played / Hrs</label>
+                        <input type="number" step="0.1" id="Guitar Played / Hrs" name="Guitar Played / Hrs" class="form-input" placeholder="e.g., 1.5" required>
+                    </div>
+                     <div>
+                        <label for="Press Ups" class="form-label">Press Ups</label>
+                        <input type="number" id="Press Ups" name="Press Ups" class="form-input" placeholder="e.g., 25" required>
+                    </div>
+                     <div>
+                        <label for="Sit Ups" class="form-label">Sit Ups</label>
+                        <input type="number" id="Sit Ups" name="Sit Ups" class="form-input" placeholder="e.g., 50" required>
+                    </div>
+                     <div>
+                        <label for="Backs" class="form-label">Backs</label>
+                        <input type="number" id="Backs" name="Backs" class="form-input" placeholder="e.g., 20" required>
+                    </div>
+                     <div>
+                        <label for="Head Ups" class="form-label">Head Ups</label>
+                        <input type="number" id="Head Ups" name="Head Ups" class="form-input" placeholder="e.g., 20" required>
+                    </div>
+                     <div>
+                        <label for="Drinks" class="form-label">Drinks (Alcoholic)</label>
+                        <input type="number" id="Drinks" name="Drinks" class="form-input" placeholder="e.g., 2" required>
+                    </div>
+                    <div>
+                        <label for="Mood Score" class="form-label">Mood Score (<span id="mood-value">5</span>/10)</label>
+                        <input type="range" id="Mood Score" name="Mood Score" min="1" max="10" value="5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div class="flex items-center space-x-8">
+                        <div>
+                             <label for="Flossed" class="form-label">Flossed</label>
+                             <select id="Flossed" name="Flossed" class="form-input">
+                                 <option>Yes</option>
+                                 <option selected>No</option>
+                             </select>
+                         </div>
+                         <div>
+                             <label for="Finasteride" class="form-label">Finasteride</label>
+                             <select id="Finasteride" name="Finasteride" class="form-input">
+                                 <option>Yes</option>
+                                 <option selected>No</option>
+                             </select>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- Semantic Notes -->
+                <div class="mb-6">
+                    <label for="Semantic" class="form-label">Semantic (Notes for the day)</label>
+                    <textarea id="Semantic" name="Semantic" rows="4" class="form-input" placeholder="e.g., Good day at work, felt productive..."></textarea>
+                </div>
+                
+                <!-- Submit Button -->
+                <div>
+                    <button type="submit" id="submit-button" class="submit-button">
+                        <span id="submit-text">Add to Sheet</span>
+                        <span id="submit-spinner" class="hidden">
+                           <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                           </svg>
+                           Submitting...
+                        </span>
+                    </button>
+                </div>
+            </form>
             
-        <div class="status" id="status">Ready to record</div>
-        
-        <div class="transcript-container">
-            <h3>Speech Transcript:</h3>
-            <div class="transcript" id="transcript"></div>
-        </div>
-        
-       <div class="form-entry">
-        <h3>Manual Entry Form</h3>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="datePicker">Date:</label>
-                <input type="date" id="datePicker">
-            </div>
-            <div class="form-group">
-                <label for="wakeTime">Wake Up Time:</label>
-                <input type="time" id="wakeTime">
-            </div>
-            <div class="form-group">
-                <label for="milesRun">Miles Run:</label>
-                <input type="number" id="milesRun" step="0.1" min="0">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="pressUps">Press Ups:</label>
-                <input type="number" id="pressUps" min="0">
-            </div>
-            <div class="form-group">
-                <label for="sitUps">Sit Ups:</label>
-                <input type="number" id="sitUps" min="0">
-            </div>
-            <div class="form-group">
-                <label for="backs">Backs:</label>
-                <input type="number" id="backs" min="0">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="headUps">Head Ups:</label>
-                <input type="number" id="headUps" min="0">
-            </div>
-            <div class="form-group">
-                <label for="guitarHours">Guitar Hours:</label>
-                <input type="number" id="guitarHours" step="0.25" min="0">
-            </div>
-            <div class="form-group">
-                <label for="drinks">Drinks:</label>
-                <input type="number" id="drinks" min="0">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="flossed">Flossed:</label>
-                <select id="flossed">
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="finasteride">Finasteride:</label>
-                <select id="finasteride">
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="moodScore">Mood Score:</label>
-                <input type="number" id="moodScore" min="1" max="10" step="1">
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <button id="addEntryBtn" class="save">Add Entry</button>
-            </div>
-        </div>
-    </div>
+            <!-- Status Message Area -->
+            <div id="status-message" class="mt-6 text-center text-lg"></div>
 
-        <div class="data-display">
-            <h3>Your Fitness Data:</h3>
-            <div style="overflow-x: auto;">
-                <table id="dataTable">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Wake Up Time</th>
-                            <th>Miles Run</th>
-                            <th>Press Ups</th>
-                            <th>Sit Ups</th>
-                            <th>Backs</th>
-                            <th>Head Ups</th>
-                            <th>Guitar Played / Hrs</th>
-                            <th>Drinks</th>
-                            <th>Flossed</th>
-                            <th>Finasteride</th>
-                            <th>Mood Score</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        <!-- Data will be inserted here -->
-                    </tbody>
-                </table>
-            </div>
         </div>
-        
-        <!-- Analytics Section -->
-        <div class="analytics-section">
-            <h3>Analytics</h3>
-            <div class="chart-container">
-                <canvas id="milesChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <canvas id="exerciseChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <canvas id="moodChart"></canvas>
-            </div>
-        </div>
-        
-        <!-- Loading Indicator -->
-        <div id="loadingIndicator" class="loading">
-            Loading data...
-        </div>
-
-        <!-- GitHub Configuration Modal -->
-        <div id="githubModal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h3>Configure GitHub Integration</h3>
-                <div class="form-group">
-                    <label for="githubToken">GitHub Personal Access Token:</label>
-                    <input type="password" id="githubToken" placeholder="ghp_...">
-                </div>
-                <div class="form-group">
-                    <label for="githubRepo">Repository (username/repo-name):</label>
-                    <input type="text" id="githubRepo" placeholder="yourusername/fitness-data">
-                </div>
-                <div class="form-group">
-                    <label for="githubBranch">Branch:</label>
-                    <input type="text" id="githubBranch" value="main" placeholder="main">
-                </div>
-                <div class="form-group">
-                    <label for="githubFilename">Filename:</label>
-                    <input type="text" id="githubFilename" value="fitness-data.csv" placeholder="fitness-data.csv">
-                </div>
-                <button id="saveGithubConfig" class="save">Save Configuration</button>
-            </div>
-        </div>
-    </div>
+    </main>
 
     <script>
-    // Global variables and utility functions
-    let fitnessData = [];
-    let charts = {
-        miles: null,
-        exercise: null,
-        mood: null
-    };
-    let recognition = null;
-    let isRecording = false;
+        // --- SCRIPT TO HANDLE FORM SUBMISSION ---
 
-    // GitHub configuration
-        let githubConfig = {
-              token: '',
-              username: '',
-              repository: '',
-              branch: 'main',
-              isAuthenticated: false
-            };
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbw65z8D2joiMqQiOZhVY8U590YGACpbs_HHw5gqBcXIgmkcAgomVp8QIL1Fdn3SkdW8sQ/exec';
 
-    // Initialize speech recognition
-    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-    }
+        const form = document.forms['data-form'];
+        const submitButton = document.getElementById('submit-button');
+        const submitText = document.getElementById('submit-text');
+        const submitSpinner = document.getElementById('submit-spinner');
+        const statusMessage = document.getElementById('status-message');
+        const moodSlider = document.getElementById('Mood Score');
+        const moodValue = document.getElementById('mood-value');
 
-    // Utility Functions
-    function formatDateToISO(date) {
-        if (typeof date === 'string') {
-            return date;
-        }
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
+        // Set today's date automatically
+        document.getElementById('Date').valueAsDate = new Date();
 
-    function parseTranscript(transcript) {
-        const text = transcript.toLowerCase();
-        const entry = {
-            date: formatDateToISO(new Date()),
-            wakeUpTime: '',
-            milesRun: 0,
-            pressUps: 0,
-            sitUps: 0,
-            backs: 0,
-            headUps: 0,
-            guitarHours: 0,
-            drinks: 0,
-            flossed: 'No',
-            finasteride: 'No',
-            moodScore: ''
-        };
-
-        // Parse running miles
-        const milesMatch = text.match(/(\d+\.?\d*)\s*miles?/);
-        if (milesMatch) {
-            entry.milesRun = parseFloat(milesMatch[1]);
-        }
-
-        // Parse exercises
-        const pushupMatch = text.match(/(\d+)\s*(push[\s-]?ups?|press[\s-]?ups?)/);
-        if (pushupMatch) {
-            entry.pressUps = parseInt(pushupMatch[1]);
-        }
-
-        const situpMatch = text.match(/(\d+)\s*sit[\s-]?ups?/);
-        if (situpMatch) {
-            entry.sitUps = parseInt(situpMatch[1]);
-        }
-
-        // Parse guitar hours
-        const guitarMatch = text.match(/(\d+\.?\d*)\s*hours?\s*guitar|guitar\s*(\d+\.?\d*)\s*hours?/);
-        if (guitarMatch) {
-            entry.guitarHours = parseFloat(guitarMatch[1] || guitarMatch[2]);
-        }
-
-        // Parse drinks
-        const drinksMatch = text.match(/(\d+)\s*drinks?/);
-        if (drinksMatch) {
-            entry.drinks = parseInt(drinksMatch[1]);
-        }
-
-        // Parse flossed
-        if (text.includes('floss')) {
-            entry.flossed = 'Yes';
-        }
-
-        // Parse mood
-        const moodMatch = text.match(/mood\s*(\d+)|(\d+)\s*mood/);
-        if (moodMatch) {
-            entry.moodScore = moodMatch[1] || moodMatch[2];
-        }
-
-        return entry;
-    }
-
-    function handleTranscriptAfterRecording() {
-        const transcriptText = document.getElementById('transcript').textContent;
-        if (transcriptText.trim()) {
-            const parsedEntry = parseTranscript(transcriptText);
-            
-            // Check if entry for today already exists
-            const existingIndex = fitnessData.findIndex(entry => entry.date === parsedEntry.date);
-            if (existingIndex >= 0) {
-                // Merge with existing entry
-                fitnessData[existingIndex] = { ...fitnessData[existingIndex], ...parsedEntry };
-            } else {
-                fitnessData.push(parsedEntry);
-            }
-            
-            renderTable();
-            updateCharts();
-            saveToLocalStorage();
-        }
-    }
-
-    function convertToCSV() {
-        if (fitnessData.length === 0) return '';
-        
-        const headers = ['Date', 'Wake Up Time', 'Miles Run', 'Press Ups', 'Sit Ups', 'Backs', 'Head Ups', 'Guitar Hours', 'Drinks', 'Flossed', 'Finasteride', 'Mood Score'];
-        const csvRows = [headers.join(',')];
-        
-        fitnessData.forEach(entry => {
-            const row = [
-                entry.date,
-                entry.wakeUpTime || '',
-                entry.milesRun || 0,
-                entry.pressUps || 0,
-                entry.sitUps || 0,
-                entry.backs || 0,
-                entry.headUps || 0,
-                entry.guitarHours || 0,
-                entry.drinks || 0,
-                entry.flossed || 'No',
-                entry.finasteride || 'No',
-                entry.moodScore || ''
-            ];
-            csvRows.push(row.join(','));
-        });
-        
-        return csvRows.join('\n');
-    }
-
-    function parseCSV(csvText) {
-        const lines = csvText.split('\n').filter(line => line.trim());
-        if (lines.length < 2) return [];
-        
-        const headers = lines[0].split(',').map(h => h.trim());
-        const data = [];
-        
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            const entry = {
-                date: values[0] || '',
-                wakeUpTime: values[1] || '',
-                milesRun: parseFloat(values[2]) || 0,
-                pressUps: parseInt(values[3]) || 0,
-                sitUps: parseInt(values[4]) || 0,
-                backs: parseInt(values[5]) || 0,
-                headUps: parseInt(values[6]) || 0,
-                guitarHours: parseFloat(values[7]) || 0,
-                drinks: parseInt(values[8]) || 0,
-                flossed: values[9] || 'No',
-                finasteride: values[10] || 'No',
-                moodScore: values[11] || ''
-            };
-            data.push(entry);
-        }
-        
-        return data;
-    }
-
-    function renderTable() {
-        const tableBody = document.getElementById('tableBody');
-        tableBody.innerHTML = '';
-        
-        // Sort data by date (newest first)
-        const sortedData = [...fitnessData].sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        sortedData.forEach((entry, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${entry.date}</td>
-                <td>${entry.wakeUpTime || '-'}</td>
-                <td>${entry.milesRun || 0}</td>
-                <td>${entry.pressUps || 0}</td>
-                <td>${entry.sitUps || 0}</td>
-                <td>${entry.backs || 0}</td>
-                <td>${entry.headUps || 0}</td>
-                <td>${entry.guitarHours || 0}</td>
-                <td>${entry.drinks || 0}</td>
-                <td>${entry.flossed || 'No'}</td>
-                <td>${entry.finasteride || 'No'}</td>
-                <td>${entry.moodScore || '-'}</td>
-                <td>
-                    <button class="edit-btn" onclick="editEntry('${entry.date}')">Edit</button>
-                    <button class="delete-btn" onclick="deleteEntry('${entry.date}')">Delete</button>
-                </td>
-            `;
-            tableBody.appendChild(row);
-        });
-    }
-
-    function editEntry(date) {
-        const entry = fitnessData.find(e => e.date === date);
-        if (!entry) return;
-        
-        // Populate form with entry data
-        document.getElementById('datePicker').value = entry.date;
-        document.getElementById('wakeTime').value = entry.wakeUpTime || '';
-        document.getElementById('milesRun').value = entry.milesRun || '';
-        document.getElementById('pressUps').value = entry.pressUps || '';
-        document.getElementById('sitUps').value = entry.sitUps || '';
-        document.getElementById('backs').value = entry.backs || '';
-        document.getElementById('headUps').value = entry.headUps || '';
-        document.getElementById('guitarHours').value = entry.guitarHours || '';
-        document.getElementById('drinks').value = entry.drinks || '';
-        document.getElementById('flossed').value = entry.flossed || 'No';
-        document.getElementById('finasteride').value = entry.finasteride || 'No';
-        document.getElementById('moodScore').value = entry.moodScore || '';
-        
-        // Change button text and add edit index
-        const addBtn = document.getElementById('addEntryBtn');
-        addBtn.textContent = 'Update Entry';
-        addBtn.setAttribute('data-edit-date', date);
-        
-        // Scroll to form
-        document.querySelector('.form-entry').scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function deleteEntry(date) {
-        if (confirm('Are you sure you want to delete this entry?')) {
-            fitnessData = fitnessData.filter(entry => entry.date !== date);
-            renderTable();
-            updateCharts();
-            saveToLocalStorage();
-        }
-    }
-
-    function saveToLocalStorage() {
-        try {
-            const dataToSave = JSON.stringify(fitnessData);
-            // Since we can't use localStorage, we'll just show a message
-            document.getElementById('status').textContent = 'Data saved to memory (localStorage not available in this environment)';
-        } catch (error) {
-            document.getElementById('status').textContent = 'Error saving data: ' + error.message;
-        }
-    }
-
-    function loadFromLocalStorage() {
-        try {
-            // Since we can't use localStorage, we'll start with empty data
-            fitnessData = [];
-            return true;
-        } catch (error) {
-            console.error('Error loading data:', error);
-            return false;
-        }
-    }
-
-    function updateCharts() {
-        // Get last 30 days of data
-        const sortedData = [...fitnessData]
-            .sort((a, b) => new Date(a.date) - new Date(b.date))
-            .slice(-30);
-        
-        const dates = sortedData.map(entry => entry.date);
-        const miles = sortedData.map(entry => entry.milesRun || 0);
-        const pressUps = sortedData.map(entry => entry.pressUps || 0);
-        const sitUps = sortedData.map(entry => entry.sitUps || 0);
-        const moodScores = sortedData.map(entry => parseInt(entry.moodScore) || null);
-
-        // Miles Chart
-        if (charts.miles) {
-            charts.miles.destroy();
-        }
-        const milesCtx = document.getElementById('milesChart').getContext('2d');
-        charts.miles = new Chart(milesCtx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [{
-                    label: 'Miles Run',
-                    data: miles,
-                    borderColor: '#4CAF50',
-                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                    tension: 0.1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Miles Run Over Time',
-                        color: '#fff'
-                    },
-                    legend: {
-                        labels: {
-                            color: '#fff'
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: { color: '#fff' },
-                        grid: { color: '#444' }
-                    },
-                    y: {
-                        ticks: { color: '#fff' },
-                        grid: { color: '#444' }
-                    }
-                }
-            }
+        // Update mood score display when slider changes
+        moodSlider.addEventListener('input', (e) => {
+            moodValue.textContent = e.target.value;
         });
 
-        // Exercise Chart
-        if (charts.exercise) {
-            charts.exercise.destroy();
-        }
-        const exerciseCtx = document.getElementById('exerciseChart').getContext('2d');
-        charts.exercise = new Chart(exerciseCtx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [
-                    {
-                        label: 'Press Ups',
-                        data: pressUps,
-                        borderColor: '#FF6384',
-                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                        tension: 0.1
-                    },
-                    {
-                        label: 'Sit Ups',
-                        data: sitUps,
-                        borderColor: '#36A2EB',
-                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                        tension: 0.1
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Exercise Progress',
-                        color: '#fff'
-                    },
-                    legend: {
-                        labels: {
-                            color: '#fff'
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        ticks: { color: '#fff' },
-                        grid: { color: '#444' }
-                    },
-                    y: {
-                        ticks: { color: '#fff' },
-                        grid: { color: '#444' }
-                    }
-                }
-            }
+        form.addEventListener('submit', e => {
+            e.preventDefault(); // Prevent the form from submitting the default way
+
+            // Show loading state
+            submitText.classList.add('hidden');
+            submitSpinner.classList.remove('hidden');
+            submitButton.disabled = true;
+            statusMessage.textContent = '';
+
+            fetch(scriptURL, { method: 'POST', body: new FormData(form)})
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success!', data);
+                    statusMessage.textContent = '✅ Success! Your data has been added to the sheet.';
+                    statusMessage.className = 'mt-6 text-center text-lg text-green-600';
+                    form.reset(); // Reset the form fields
+                    document.getElementById('Date').valueAsDate = new Date(); // Re-set date after reset
+                    moodValue.textContent = '5'; // Reset mood slider display
+                    setTimeout(() => { statusMessage.textContent = ''; }, 5000); // Clear message after 5 seconds
+                })
+                .catch(error => {
+                    console.error('Error!', error.message);
+                    statusMessage.textContent = `❌ Error! Something went wrong. ${error.message}`;
+                    statusMessage.className = 'mt-6 text-center text-lg text-red-600';
+                })
+                .finally(() => {
+                    // Restore button to normal state
+                    submitText.classList.remove('hidden');
+                    submitSpinner.classList.add('hidden');
+                    submitButton.disabled = false;
+                });
         });
-
-    // GitHub Functions
-    async function checkGitHubAuth() {
-      const credentials = loadGitHubCredentials();
-      const statusElement = document.getElementById('githubStatus');
-      
-      if (!credentials) {
-        statusElement.textContent = 'Not connected to GitHub';
-        statusElement.style.color = '#ccc';
-        return;
-      }
-      
-      if (credentials.expired) {
-        statusElement.textContent = `Token expired for ${credentials.username}/${credentials.repository}`;
-        statusElement.style.color = '#e74c3c';
-        return;
-      }
-      
-      // Compute days remaining until expiration
-      const daysRemaining = Math.ceil((credentials.expiryDate - new Date()) / (1000 * 60 * 60 * 24));
-      
-      // Set up config with loaded credentials
-      githubConfig = {
-        token: credentials.token,
-        username: credentials.username,
-        repository: credentials.repository,
-        branch: credentials.branch,
-        isAuthenticated: false
-      };
-      
-      try {
-        // Test if the saved token is still valid
-        const authenticated = await testGitHubAuth();
-        if (authenticated) {
-          githubConfig.isAuthenticated = true;
-          statusElement.textContent = `Connected to ${credentials.username}/${credentials.repository} (${daysRemaining} days remaining)`;
-          statusElement.style.color = '#27ae60';
-          document.getElementById('configureGithubBtn').textContent = 'Reconfigure GitHub';
-        } else {
-          statusElement.textContent = `Authentication failed for ${credentials.username}/${credentials.repository}`;
-          statusElement.style.color = '#e74c3c';
-        }
-      } catch (error) {
-        statusElement.textContent = `Authentication error: ${error.message}`;
-        statusElement.style.color = '#e74c3c';
-      }
-    }
-
-        // Test GitHub Authentication
-        async function testGitHubAuth() {
-          try {
-            const response = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repository}`, {
-              headers: {
-                'Authorization': `token ${githubConfig.token}`,
-                'Accept': 'application/vnd.github.v3+json'
-              }
-            });
-            
-            if (response.status === 200) {
-              return true;
-            } else if (response.status === 404) {
-              throw new Error('Repository not found. Make sure it exists and you have access to it.');
-            } else {
-              const data = await response.json();
-              throw new Error(data.message || 'Authentication failed');
-            }
-          } catch (error) {
-            console.error('GitHub authentication error:', error);
-            throw error;
-          }
-        }
-        
-        // Get existing file content from GitHub
-        async function getFileFromGitHub(path) {
-          try {
-            const response = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repository}/contents/${path}?ref=${githubConfig.branch}`, {
-              headers: {
-                'Authorization': `token ${githubConfig.token}`,
-                'Accept': 'application/vnd.github.v3+json'
-              }
-            });
-            
-            if (response.status === 200) {
-              const data = await response.json();
-              // GitHub API returns content as base64 encoded
-              return {
-                content: atob(data.content),
-                sha: data.sha // We need this for updating the file later
-              };
-            } else if (response.status === 404) {
-              // File doesn't exist yet
-              return null;
-            } else {
-              const data = await response.json();
-              throw new Error(data.message || 'Failed to get file');
-            }
-          } catch (error) {
-            console.error('Error fetching file from GitHub:', error);
-            throw error;
-          }
-        }
-        
-        // Save file to GitHub
-        async function saveFileToGitHub(path, content, message) {
-          try {
-            // First check if file exists to get its SHA
-            let existingFile = null;
-            try {
-              existingFile = await getFileFromGitHub(path);
-            } catch (err) {
-              // File doesn't exist yet, which is fine
-            }
-            
-            const body = {
-              message: message,
-              content: btoa(content), // Convert to base64
-              branch: githubConfig.branch
-            };
-            
-            // If file exists, we need to include its SHA for updating
-            if (existingFile && existingFile.sha) {
-              body.sha = existingFile.sha;
-            }
-            
-            const response = await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repository}/contents/${path}`, {
-              method: 'PUT',
-              headers: {
-                'Authorization': `token ${githubConfig.token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(body)
-            });
-            
-            if (response.status === 200 || response.status === 201) {
-              return await response.json();
-            } else {
-              const data = await response.json();
-              throw new Error(data.message || 'Failed to save file');
-            }
-          } catch (error) {
-            console.error('Error saving file to GitHub:', error);
-            throw error;
-          }
-        }
-        
-        // Save fitness data to GitHub
-        async function saveFitnessDataToGitHub() {
-          if (!githubConfig.isAuthenticated) {
-            alert('Please configure your GitHub account first');
-            createGitHubAuthModal();
-            return false;
-          }
-          
-          try {
-            const csv = convertToCSV();
-            const timestamp = new Date().toISOString().replace(/:/g, '-');
-            const filename = 'tracker.csv';
-            
-            // Save the main CSV file
-            await saveFileToGitHub(
-              filename,
-              csv,
-              `Update fitness data - ${timestamp}`
-            );
-            
-            // Also save a backup with timestamp
-            await saveFileToGitHub(
-              `backups/tracker_${timestamp}.csv`,
-              csv,
-              `Backup fitness data - ${timestamp}`
-            );
-            
-            return true;
-          } catch (error) {
-            console.error('Error saving to GitHub:', error);
-            alert(`Failed to save to GitHub: ${error.message}`);
-            return false;
-          }
-        }
-        
-        // Load fitness data from GitHub
-        async function loadFitnessDataFromGitHub() {
-          if (!githubConfig.isAuthenticated) {
-            alert('Please configure your GitHub account first');
-            createGitHubAuthModal();
-            return false;
-          }
-          
-          try {
-            const fileData = await getFileFromGitHub('tracker.csv');
-            
-            if (fileData && fileData.content) {
-              fitnessData = parseCSV(fileData.content);
-              renderTable();
-              status.textContent = 'Data loaded from GitHub successfully';
-              return true;
-            } else {
-              status.textContent = 'No existing data found on GitHub';
-              return false;
-            }
-          } catch (error) {
-            console.error('Error loading from GitHub:', error);
-            alert(`Failed to load from GitHub: ${error.message}`);
-            return false;
-          }
-        }
-
-    function initializeApp() {
-        loadFromLocalStorage();
-        renderTable();
-        updateCharts();
-    }
-
-    // Wait for DOM to be fully loaded
-    document.addEventListener('DOMContentLoaded', () => {
-        // DOM Elements
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const saveBtn = document.getElementById('saveBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const loadCsvBtn = document.getElementById('loadCsvBtn');
-        const fileInput = document.getElementById('fileInput');
-        const addEntryBtn = document.getElementById('addEntryBtn');
-        const status = document.getElementById('status');
-        const transcript = document.getElementById('transcript');
-        const tableBody = document.getElementById('tableBody');
-
-        // Set up speech recognition handlers
-        if (recognition) {
-            recognition.onstart = () => {
-                status.innerHTML = '<span class="record-indicator">● Recording...</span>';
-                isRecording = true;
-                startBtn.disabled = true;
-                stopBtn.disabled = false;
-            };
-
-            recognition.onend = () => {
-                status.textContent = 'Recording stopped';
-                isRecording = false;
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-                handleTranscriptAfterRecording();
-            };
-
-            recognition.onresult = (event) => {
-                let interimTranscript = '';
-                let finalTranscript = '';
-                
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const result = event.results[i];
-                    if (result.isFinal) {
-                        finalTranscript += result[0].transcript;
-                    } else {
-                        interimTranscript += result[0].transcript;
-                    }
-                }
-                
-                transcript.innerHTML = finalTranscript + '<i style="color: #888;">' + interimTranscript + '</i>';
-            };
-
-            recognition.onerror = (event) => {
-                status.textContent = 'Error: ' + event.error;
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-            };
-        } else {
-            status.textContent = 'Speech recognition not supported in this browser.';
-            startBtn.disabled = true;
-        }
-
-        // Event Listeners
-        startBtn.addEventListener('click', () => {
-            if (recognition) {
-                transcript.textContent = '';
-                recognition.start();
-            }
-        });
-
-        stopBtn.addEventListener('click', () => {
-            if (recognition && isRecording) {
-                recognition.stop();
-            }
-        });
-
-        saveBtn.addEventListener('click', () => {
-            saveToLocalStorage();
-        });
-
-        downloadBtn.addEventListener('click', () => {
-            const csv = convertToCSV();
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', 'fitness-tracker-' + new Date().toISOString().split('T')[0] + '.csv');
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        loadCsvBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    try {
-                        fitnessData = parseCSV(event.target.result);
-                        renderTable();
-                        updateCharts();
-                        status.textContent = 'CSV file imported successfully';
-                    } catch (error) {
-                        status.textContent = 'Error importing CSV: ' + error.message;
-                    }
-                };
-                reader.readAsText(file);
-            }
-        });
-
-        // Add Entry Button Event Listener
-        addEntryBtn.addEventListener('click', () => {
-            const editDate = addEntryBtn.getAttribute('data-edit-date');
-            const dateInput = document.getElementById('datePicker').value;
-            
-            if (!dateInput) {
-                alert('Please select a date');
-                return;
-            }
-            
-            const newEntry = {
-                date: dateInput,
-                wakeUpTime: document.getElementById('wakeTime').value,
-                milesRun: parseFloat(document.getElementById('milesRun').value) || 0,
-                pressUps: parseInt(document.getElementById('pressUps').value) || 0,
-                sitUps: parseInt(document.getElementById('sitUps').value) || 0,
-                backs: parseInt(document.getElementById('backs').value) || 0,
-                headUps: parseInt(document.getElementById('headUps').value) || 0,
-                guitarHours: parseFloat(document.getElementById('guitarHours').value) || 0,
-                drinks: parseInt(document.getElementById('drinks').value) || 0,
-                flossed: document.getElementById('flossed').value,
-                finasteride: document.getElementById('finasteride').value,
-                moodScore: document.getElementById('moodScore').value || ''
-            };
-            
-            if (editDate) {
-                // Update existing entry
-                const existingIndex = fitnessData.findIndex(entry => entry.date === editDate);
-                if (existingIndex >= 0) {
-                    fitnessData[existingIndex] = newEntry;
-                }
-            } else {
-                // Add new entry or update if date exists
-                const existingIndex = fitnessData.findIndex(entry => entry.date === dateInput);
-                if (existingIndex >= 0) {
-                    fitnessData[existingIndex] = newEntry;
-                } else {
-                    fitnessData.push(newEntry);
-                }
-            }
-            
-            // Reset form and button
-            addEntryBtn.textContent = 'Add Entry';
-            addEntryBtn.removeAttribute('data-edit-date');
-            
-            // Clear form fields
-            document.getElementById('datePicker').value = '';
-            document.getElementById('wakeTime').value = '';
-            document.getElementById('milesRun').value = '';
-            document.getElementById('pressUps').value = '';
-            document.getElementById('sitUps').value = '';
-            document.getElementById('backs').value = '';
-            document.getElementById('headUps').value = '';
-            document.getElementById('guitarHours').value = '';
-            document.getElementById('drinks').value = '';
-            document.getElementById('flossed').value = 'Yes';
-            document.getElementById('finasteride').value = 'Yes';
-            document.getElementById('moodScore').value = '';
-            
-            // Update table and charts
-            renderTable();
-            updateCharts();
-            saveToLocalStorage();
-            
-            status.textContent = 'Entry saved successfully';
-        });
-
-        // GitHub related event listeners
-        document.getElementById('configureGithubBtn').addEventListener('click', () => {
-            createGitHubAuthModal();
-        });
-
-        document.getElementById('saveGithubConfig').addEventListener('click', () => {
-            const token = document.getElementById('githubToken').value;
-            const repo = document.getElementById('githubRepo').value;
-            const branch = document.getElementById('githubBranch').value || 'main';
-            const filename = document.getElementById('githubFilename').value || 'fitness-data.csv';
-            
-            if (!token || !repo) {
-                alert('Please enter both GitHub token and repository');
-                return;
-            }
-            
-            githubConfig = {
-                token,
-                repo,
-                branch,
-                filename,
-                isAuthenticated: true
-            };
-            
-            updateGitHubStatus();
-            document.getElementById('githubModal').style.display = 'none';
-            status.textContent = 'GitHub configuration saved';
-        });
-
-        document.getElementById('loadFromGithubBtn').addEventListener('click', async () => {
-            status.textContent = 'Loading data from GitHub...';
-            
-            try {
-                const success = await loadFitnessDataFromGitHub();
-                if (success) {
-                    status.textContent = 'Data loaded from GitHub successfully';
-                    renderTable();
-                    updateCharts();
-                }
-            } catch (error) {
-                status.textContent = `Error loading from GitHub: ${error.message}`;
-            }
-        });
-
-        document.getElementById('createBackupBtn').addEventListener('click', async () => {
-            status.textContent = 'Creating backup on GitHub...';
-            
-            try {
-                const success = await saveFitnessDataToGitHub();
-                if (success) {
-                    status.textContent = 'Backup created on GitHub successfully';
-                }
-            } catch (error) {
-                status.textContent = `Error creating backup: ${error.message}`;
-            }
-        });
-
-        // Initialize the app
-        checkGitHubAuth();
-        initializeApp();
-        
-        // Set today's date in the date picker by default
-        const today = new Date();
-        document.getElementById('datePicker').value = formatDateToISO(today);
-        
-        // Initial render
-        renderTable();
-        updateCharts();
-    });
-
-    // Make functions available globally for onclick handlers
-    window.editEntry = editEntry;
-    window.deleteEntry = deleteEntry;
     </script>
 </body>
 </html>
